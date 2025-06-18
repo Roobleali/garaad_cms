@@ -1,0 +1,25 @@
+{
+  "onboarding": {
+    "form": {
+      "occupation": {
+        "label": "Occupation",
+        "placeholder": "Enter your occupation"
+      },
+      "field": {
+        "label": "Field",
+        "placeholder": "Select your field of work"
+      },
+      "franchiseKnowledge": {
+        "label": "Franchise Knowledge",
+        "placeholder": "Describe your franchise knowledge"
+      },
+      "reason": {
+        "label": "Reason",
+        "placeholder": "Why did you choose franchise?"
+      },
+      "maxInvestment": {
+        "label": "Maximum Investment"
+      }
+    }
+  }
+}

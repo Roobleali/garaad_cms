@@ -1,0 +1,25 @@
+{
+  "onboarding": {
+    "form": {
+      "occupation": {
+        "label": "Shaqada",
+        "placeholder": "Geli shaqadaada"
+      },
+      "field": {
+        "label": "Qaybta",
+        "placeholder": "Dooro qaybta aad ka shaqeyso"
+      },
+      "franchiseKnowledge": {
+        "label": "Aqoonta Franchise",
+        "placeholder": "Sharax aqoontaada franchise"
+      },
+      "reason": {
+        "label": "Sababta",
+        "placeholder": "Maxaad u dooratay franchise?"
+      },
+      "maxInvestment": {
+        "label": "Maalgashiga ugu badan"
+      }
+    }
+  }
+}
