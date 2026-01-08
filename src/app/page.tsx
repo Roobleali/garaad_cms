@@ -20,6 +20,7 @@ interface Category {
   title: string;
   description: string;
   image?: string;
+  sequence: number;
 }
 
 interface Course {
@@ -89,6 +90,7 @@ export default function HomePage() {
   const [newDescription, setNewDescription] = useState("");
   const [newImage, setNewImage] = useState("");
   const [creating, setCreating] = useState(false);
+  const [newSequence, setNewSequence] = useState(0);
   const [createError, setCreateError] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
@@ -96,6 +98,7 @@ export default function HomePage() {
   const [editDescription, setEditDescription] = useState("");
   const [editImage, setEditImage] = useState("");
   const [editing, setEditing] = useState(false);
+  const [editSequence, setEditSequence] = useState(0);
   const [editError, setEditError] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseSearch, setCourseSearch] = useState("");
@@ -232,7 +235,7 @@ export default function HomePage() {
     if (section === "categories") {
       setLoading(true);
       api.get("lms/categories/").then((res: ApiResponse<Category[]>) => {
-        setCategories(res.data);
+        setCategories(res.data.sort((a, b) => a.sequence - b.sequence));
         setLoading(false);
       }).catch(error => {
         console.error("Error fetching categories:", error);
@@ -300,13 +303,15 @@ export default function HomePage() {
         id: newId,
         title: newTitle,
         description: newDescription,
-        image: newImage || null
+        image: newImage || null,
+        sequence: newSequence
       });
 
-      setCategories([...categories, res.data]);
+      setCategories([...categories, res.data].sort((a, b) => a.sequence - b.sequence));
       setNewTitle("");
       setNewDescription("");
       setNewImage("");
+      setNewSequence(0);
       closeAllModals();
     } catch (err: unknown) {
       console.error("Error creating category:", err);
@@ -334,10 +339,11 @@ export default function HomePage() {
         id: editCategory.id,
         title: editTitle,
         description: editDescription,
-        image: editImage || null
+        image: editImage || null,
+        sequence: editSequence
       });
 
-      setCategories(categories.map(cat => cat.id === editCategory.id ? res.data : cat));
+      setCategories(categories.map(cat => cat.id === editCategory.id ? res.data : cat).sort((a, b) => a.sequence - b.sequence));
       closeAllModals();
     } catch (err: unknown) {
       console.error("Error updating category:", err);
@@ -570,6 +576,7 @@ export default function HomePage() {
                               setEditTitle(cat.title);
                               setEditDescription(cat.description);
                               setEditImage(cat.image || "");
+                              setEditSequence(cat.sequence || 0);
                               openModal('edit');
                             }}
                           >
@@ -844,6 +851,19 @@ export default function HomePage() {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
+                      <div>
+                        <label htmlFor="sequence" className="block text-sm font-medium text-gray-700 mb-1">
+                          Sequence (Sida ay isugu xigayaan)
+                        </label>
+                        <input
+                          type="number"
+                          id="sequence"
+                          value={newSequence}
+                          onChange={(e) => setNewSequence(parseInt(e.target.value) || 0)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
                       {createError && (
                         <p className="text-sm text-red-600">{createError}</p>
                       )}
@@ -923,6 +943,19 @@ export default function HomePage() {
                           value={editImage}
                           onChange={(e) => setEditImage(e.target.value)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="edit-sequence" className="block text-sm font-medium text-gray-700 mb-1">
+                          Sequence (Sida ay isugu xigayaan)
+                        </label>
+                        <input
+                          type="number"
+                          id="edit-sequence"
+                          value={editSequence}
+                          onChange={(e) => setEditSequence(parseInt(e.target.value) || 0)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
                         />
                       </div>
                       {editError && (
