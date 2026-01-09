@@ -427,34 +427,49 @@ export default function HomePage() {
 
   const handleEditCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editCourse) return;
+    console.log("handleEditCourse initiated");
+    if (!editCourse) {
+      console.log("No editCourse available, aborting update");
+      return;
+    }
 
     setEditingCourse(true);
     setEditCourseError("");
 
+    const payload = {
+      title: editCourseTitle,
+      description: editCourseDescription,
+      thumbnail: editCourseImage || null,
+      category: editCourseCategory,
+      sequence: editCourseSequence,
+      is_published: editCourseIsPublished
+    };
+
+    console.log("Updating course with payload:", payload);
+    console.log("Target URL:", `lms/courses/${editCourse.id}/`);
+
     try {
-      const res = await api.patch(`lms/courses/${editCourse.id}/`, {
-        title: editCourseTitle,
-        description: editCourseDescription,
-        thumbnail: editCourseImage || null,
-        category: editCourseCategory,
-        sequence: editCourseSequence,
-        is_published: editCourseIsPublished
-      });
+      const res = await api.patch(`lms/courses/${editCourse.id}/`, payload);
+      console.log("Update response:", res.data);
 
       setCourses(courses.map(course => course.id === editCourse.id ? res.data : course));
+      console.log("Course state updated successfully");
       closeAllModals();
     } catch (err: unknown) {
       console.error("Error updating course:", err);
       const apiError = err as ApiError;
       if (apiError.response) {
+        console.error("API error response headers:", apiError.response.headers);
+        console.error("API error response data:", apiError.response.data);
         const errorDetail = apiError.response.data?.detail || apiError.response.data?.message || apiError.message;
         setEditCourseError(errorDetail || "Koorso lama beddeli karin");
       } else {
+        console.error("Non-API error or network failure:", apiError.message);
         setEditCourseError(apiError.message || "Koorso lama beddeli karin");
       }
     } finally {
       setEditingCourse(false);
+      console.log("handleEditCourse completed");
     }
   };
 
