@@ -3,7 +3,7 @@ import { api } from '@/app/api';
 import type { ContentBlock, ContentBlockData, Option, DiagramConfig, DiagramObject, ProblemData } from '../types/content';
 import { ContentBlockModal } from './ContentBlockModal';
 import { Modal } from './ui/Modal';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Loader2, Video, Link } from 'lucide-react';
 import axios from 'axios';
 import { DEFAULT_CONTENT, DIAGRAM_EXAMPLE, MULTIPLE_CHOICE_EXAMPLE, TABLE_EXAMPLE, DEFAULT_DIAGRAM_CONFIG, LIST_EXAMPLE } from '@/lib/Block_Examples';
 
@@ -86,6 +86,14 @@ const ProblemContent = ({
                         />
                     </div>
                 )}
+                {problemContent.video_url && (
+                    <div className="md:w-48 md:h-32 rounded-lg overflow-hidden flex-shrink-0 bg-black">
+                        <video
+                            src={problemContent.video_url}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                )}
             </div>
 
             {problemContent.options && problemContent.options.length > 0 && (
@@ -133,6 +141,61 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
     const [textFieldCount, setTextFieldCount] = useState(1);
     const [tableType, setTableType] = useState<string>('');
     const [tableFeatures, setTableFeatures] = useState<TableFeature[]>([]);
+    const [videoUploading, setVideoUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
+    // Handle video upload
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>, setContent: (content: ContentBlockData) => void, content: ContentBlockData) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Basic validation
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+            setError('Muuqaalka waa inuu ka yaraadaa 100MB');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('video', file);
+        formData.append('title', content.title || file.name);
+
+        try {
+            setVideoUploading(true);
+            setUploadProgress(0);
+            setError('');
+
+            const response = await api.post('lms/videos/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                onUploadProgress: (progressEvent) => {
+                    const progress = progressEvent.total
+                        ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                        : 0;
+                    setUploadProgress(progress);
+                },
+            });
+
+            if (response.data) {
+                setContent({
+                    ...content,
+                    url: response.data.url,
+                    video_url: (content.type === 'problem' || content.type === 'quiz') ? response.data.url : undefined,
+                    uploaded_video_id: response.data.id,
+                    duration: Math.round(response.data.duration || 0),
+                    video_source_type: 'upload'
+                });
+            }
+        } catch (err) {
+            console.error('Video upload error:', err);
+            const apiError = err as ApiError;
+            setError(apiError.response?.data?.detail || 'Muuqaalka lama soo galin karin');
+        } finally {
+            setVideoUploading(false);
+            setUploadProgress(0);
+        }
+    };
 
     useEffect(() => {
         const fetchBlocks = async () => {
@@ -991,11 +1054,21 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 )}
                 {content.type !== 'list' && content.text && <div className="text-gray-700">{content.text}</div>}
                 {content.url && (
-                    <img
-                        src={content.url}
-                        alt={content.title}
-                        className="w-full max-w-md h-auto rounded-lg"
-                    />
+                    content.type === 'video' || content.type === 'quiz' ? (
+                        <div className="max-w-md aspect-video rounded-lg overflow-hidden bg-black">
+                            <video
+                                src={content.url}
+                                controls
+                                className="w-full h-full"
+                            />
+                        </div>
+                    ) : (
+                        <img
+                            src={content.url}
+                            alt={content.title}
+                            className="w-full max-w-md h-auto rounded-lg"
+                        />
+                    )
                 )}
                 {content.text1 && <div className="text-gray-700">{content.text1}</div>}
                 {content.text2 && <div className="text-gray-700">{content.text2}</div>}
@@ -1060,6 +1133,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                             <option value="table-grid">Jadwal Grid</option>
                             <option value="problem">Su'aal</option>
                             <option value="video">Muuqaal</option>
+                            <option value="quiz">Quiz</option>
                             <option value="list">Liiska</option>
                         </select>
                     </div>
@@ -1828,6 +1902,106 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         />
                                     </div>
                                 </div>
+
+                                {/* Problem Video Support */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-medium text-gray-900">
+                                        Muuqaalka Su&apos;aasha (Optional)
+                                    </label>
+
+                                    <div className="flex p-1 bg-gray-100 rounded-lg w-fit">
+                                        <button
+                                            type="button"
+                                            onClick={() => setContent({ ...content, video_source_type: 'upload' })}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${(content.video_source_type || 'upload') === 'upload'
+                                                ? 'bg-white text-blue-600 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                                }`}
+                                        >
+                                            <Upload className="w-4 h-4" />
+                                            Soo Gali
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setContent({ ...content, video_source_type: 'external' })}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${content.video_source_type === 'external'
+                                                ? 'bg-white text-blue-600 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                                }`}
+                                        >
+                                            <Link className="w-4 h-4" />
+                                            Link Dibadda ah
+                                        </button>
+                                    </div>
+
+                                    {/* Upload Section */}
+                                    {(content.video_source_type || 'upload') === 'upload' && (
+                                        <div className="space-y-4">
+                                            <div className="relative">
+                                                <input
+                                                    type="file"
+                                                    accept="video/*"
+                                                    onChange={(e) => handleVideoUpload(e, setContent, content)}
+                                                    disabled={videoUploading}
+                                                    className="hidden"
+                                                    id="problem-video-upload"
+                                                />
+                                                <label
+                                                    htmlFor="problem-video-upload"
+                                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${videoUploading
+                                                        ? 'bg-gray-50 border-gray-300 cursor-not-allowed'
+                                                        : 'bg-white border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                                                        }`}
+                                                >
+                                                    {videoUploading ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                                            <span className="text-sm font-medium text-gray-600">
+                                                                Soo galinayaa... {uploadProgress}%
+                                                            </span>
+                                                        </div>
+                                                    ) : content.video_url ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Video className="w-8 h-8 text-green-500" />
+                                                            <span className="text-sm font-medium text-green-600">
+                                                                Muuqaal waa la soo galiyay
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Upload className="w-8 h-8 text-gray-400" />
+                                                            <span className="text-sm font-medium text-gray-600">
+                                                                Guji si aad u soo gasho muuqaal
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </label>
+                                            </div>
+                                            {content.video_url && !videoUploading && (
+                                                <div className="aspect-video w-full rounded-lg overflow-hidden bg-black shadow-inner">
+                                                    <video
+                                                        src={content.video_url}
+                                                        controls
+                                                        className="w-full h-full"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* External Link Section */}
+                                    {content.video_source_type === 'external' && (
+                                        <div>
+                                            <input
+                                                type="url"
+                                                value={content.video_url || ''}
+                                                onChange={(e) => setContent({ ...content, video_url: e.target.value })}
+                                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                placeholder="https://example.com/video.mp4"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -2593,17 +2767,115 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     placeholder="Geli ciwaanka muuqaalka..."
                                 />
                             </div>
-                            <div>
-                                <label htmlFor="video-url" className="block text-sm font-medium mb-2 text-gray-900">URL-ka Muuqaalka</label>
-                                <input
-                                    id="video-url"
-                                    type="url"
-                                    value={content.url || ''}
-                                    onChange={(e) => setContent({ ...content, url: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    placeholder="https://example.com/video.mp4"
-                                />
+
+                            {/* Video Source Toggle */}
+                            <div className="flex p-1 bg-gray-100 rounded-lg w-fit">
+                                <button
+                                    type="button"
+                                    onClick={() => setContent({ ...content, video_source_type: 'upload' })}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${(content.video_source_type || 'upload') === 'upload'
+                                        ? 'bg-white text-blue-600 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    Soo Gali
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setContent({ ...content, video_source_type: 'external' })}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${content.video_source_type === 'external'
+                                        ? 'bg-white text-blue-600 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                >
+                                    <Link className="w-4 h-4" />
+                                    Link Dibadda ah
+                                </button>
                             </div>
+
+                            {/* Upload Section */}
+                            {(content.video_source_type || 'upload') === 'upload' && (
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            accept="video/*"
+                                            onChange={(e) => handleVideoUpload(e, setContent, content)}
+                                            disabled={videoUploading}
+                                            className="hidden"
+                                            id="video-file-upload"
+                                        />
+                                        <label
+                                            htmlFor="video-file-upload"
+                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${videoUploading
+                                                ? 'bg-gray-50 border-gray-300 cursor-not-allowed'
+                                                : 'bg-white border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                                                }`}
+                                        >
+                                            {videoUploading ? (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                                    <span className="text-sm font-medium text-gray-600">
+                                                        Soo galinayaa... {uploadProgress}%
+                                                    </span>
+                                                    <div className="w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-blue-500 transition-all duration-300"
+                                                            style={{ width: `${uploadProgress}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : content.url ? (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Video className="w-8 h-8 text-green-500" />
+                                                    <span className="text-sm font-medium text-green-600">
+                                                        Muuqaal waa la soo galiyay
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 truncate max-w-[250px]">
+                                                        {content.url}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <Upload className="w-8 h-8 text-gray-400" />
+                                                    <span className="text-sm font-medium text-gray-600">
+                                                        Guji si aad u soo gasho muuqaal
+                                                    </span>
+                                                    <span className="text-xs text-gray-400">
+                                                        MP4, WebM, MOV (Max. 100MB)
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </label>
+                                    </div>
+                                    {content.url && !videoUploading && (
+                                        <div className="aspect-video w-full rounded-lg overflow-hidden bg-black shadow-inner">
+                                            <video
+                                                src={content.url}
+                                                controls
+                                                className="w-full h-full"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* External Link Section */}
+                            {content.video_source_type === 'external' && (
+                                <div>
+                                    <label htmlFor="video-url" className="block text-sm font-medium mb-2 text-gray-900">URL-ka Muuqaalka</label>
+                                    <input
+                                        id="video-url"
+                                        type="url"
+                                        value={content.url || ''}
+                                        onChange={(e) => setContent({ ...content, url: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        placeholder="https://example.com/video.mp4"
+                                    />
+                                </div>
+                            )}
+
                             <div>
                                 <label htmlFor="video-description" className="block text-sm font-medium mb-2 text-gray-900">Sharaxaada Muuqaalka (Ikhtiyaari)</label>
                                 <textarea
@@ -2624,6 +2896,179 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     placeholder="Muddada muuqaalka (ilbiriqsi)..."
                                     min="0"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {content.type === 'quiz' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                            <h4 className="text-base font-semibold text-gray-900">Faahfaahinta Quiz-ka</h4>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label htmlFor="quiz-question" className="block text-sm font-medium mb-2 text-gray-900">Su&apos;aasha Quiz-ka</label>
+                                <textarea
+                                    id="quiz-question"
+                                    value={content.text || ''}
+                                    onChange={(e) => setContent({ ...content, text: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[100px]"
+                                    placeholder="Geli su'aasha quiz-ka..."
+                                />
+                            </div>
+
+                            {/* Video Source Toggle */}
+                            <div className="space-y-4">
+                                <label className="block text-sm font-medium text-gray-900">
+                                    Muuqaalka Su&apos;aasha (Optional)
+                                </label>
+                                <div className="flex p-1 bg-gray-100 rounded-lg w-fit">
+                                    <button
+                                        type="button"
+                                        onClick={() => setContent({ ...content, video_source_type: 'upload' })}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${(content.video_source_type || 'upload') === 'upload'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        <Upload className="w-4 h-4" />
+                                        Soo Gali
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setContent({ ...content, video_source_type: 'external' })}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${content.video_source_type === 'external'
+                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        <Link className="w-4 h-4" />
+                                        Link Dibadda ah
+                                    </button>
+                                </div>
+
+                                {/* Upload Section */}
+                                {(content.video_source_type || 'upload') === 'upload' && (
+                                    <div className="space-y-4">
+                                        <div className="relative">
+                                            <input
+                                                type="file"
+                                                accept="video/*"
+                                                onChange={(e) => handleVideoUpload(e, setContent, content)}
+                                                disabled={videoUploading}
+                                                className="hidden"
+                                                id="quiz-video-upload"
+                                            />
+                                            <label
+                                                htmlFor="quiz-video-upload"
+                                                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-all ${videoUploading
+                                                    ? 'bg-gray-50 border-gray-300 cursor-not-allowed'
+                                                    : 'bg-white border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                                                    }`}
+                                            >
+                                                {videoUploading ? (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            Soo galinayaa... {uploadProgress}%
+                                                        </span>
+                                                    </div>
+                                                ) : content.url ? (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Video className="w-8 h-8 text-green-500" />
+                                                        <span className="text-sm font-medium text-green-600">
+                                                            Muuqaal waa la soo galiyay
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Upload className="w-8 h-8 text-gray-400" />
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            Guji si aad u soo gasho muuqaal
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* External Link Section */}
+                                {content.video_source_type === 'external' && (
+                                    <div>
+                                        <label htmlFor="quiz-video-url" className="block text-sm font-medium mb-2 text-gray-900">URL-ka Muuqaalka</label>
+                                        <input
+                                            id="quiz-video-url"
+                                            type="url"
+                                            value={content.url || ''}
+                                            onChange={(e) => setContent({ ...content, url: e.target.value })}
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            placeholder="https://example.com/video.mp4"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Options */}
+                            <div className="space-y-4">
+                                <label className="block text-sm font-medium text-gray-900">Doorashooyinka</label>
+                                {(content.options || []).map((option, idx) => (
+                                    <div key={idx} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={option.text}
+                                            onChange={(e) => {
+                                                const newOptions = [...(content.options || [])];
+                                                newOptions[idx] = { ...option, text: e.target.value };
+                                                setContent({ ...content, options: newOptions });
+                                            }}
+                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
+                                            placeholder={`Option ${idx + 1}`}
+                                        />
+                                        <input
+                                            type="radio"
+                                            name="quiz-correct"
+                                            checked={content.correct_answer?.[0]?.id === option.id}
+                                            onChange={() => setContent({ ...content, correct_answer: [option] })}
+                                            className="mt-3"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newOptions = (content.options || []).filter((_, i) => i !== idx);
+                                                setContent({ ...content, options: newOptions });
+                                            }}
+                                            className="text-red-500"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const nextId = String((content.options || []).length + 1);
+                                        setContent({
+                                            ...content,
+                                            options: [...(content.options || []), { id: nextId, text: '' }]
+                                        });
+                                    }}
+                                    className="text-sm text-blue-600 font-medium"
+                                >
+                                    + Ku dar doorasho
+                                </button>
+                            </div>
+
+                            <div>
+                                <label htmlFor="quiz-explanation" className="block text-sm font-medium mb-2 text-gray-900">Sharaxaada (Optional)</label>
+                                <textarea
+                                    id="quiz-explanation"
+                                    value={content.explanation || ''}
+                                    onChange={(e) => setContent({ ...content, explanation: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[100px]"
+                                    placeholder="Sharaxaad ku saabsan jawaabta saxda ah..."
                                 />
                             </div>
                         </div>
@@ -2737,6 +3182,8 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                             content: problemData.content,
                                                                             xp: problemData.xp,
                                                                             img: problemData.img,
+                                                                            video_url: problemData.video_url,
+                                                                            uploaded_video_id: problemData.uploaded_video,
                                                                             diagram_config: problemData.diagram_config,
                                                                             order: block.order
                                                                         });

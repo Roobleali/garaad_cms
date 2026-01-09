@@ -26,7 +26,7 @@ export interface DiagramConfig {
 }
 
 export interface ContentBlockData {
-  type: "qoraal" | "table" | "table-grid" | "problem" | "video" | "list";
+  type: "qoraal" | "table" | "table-grid" | "problem" | "video" | "list" | "quiz";
   title?: string;
   text?: string;
   url?: string;
@@ -61,15 +61,15 @@ export interface ContentBlockData {
   list_items?: string[];
   // Problem specific fields
   question_type?:
-    | "multiple_choice"
-    | "single_choice"
-    | "true_false"
-    | "fill_blank"
-    | "matching"
-    | "open_ended"
-    | "math_expression"
-    | "code"
-    | "diagram";
+  | "multiple_choice"
+  | "single_choice"
+  | "true_false"
+  | "fill_blank"
+  | "matching"
+  | "open_ended"
+  | "math_expression"
+  | "code"
+  | "diagram";
   which?: string | null;
   question_text?: string;
   options?: Option[];
@@ -87,6 +87,9 @@ export interface ContentBlockData {
   // Video specific fields
   description?: string;
   duration?: number;
+  video_source_type?: 'upload' | 'external';
+  uploaded_video_id?: number | null;
+  video_url?: string | null;
 }
 
 export interface ContentBlock {
@@ -124,5 +127,7 @@ export interface ProblemData {
   xp: number;
   order: number;
   img?: string | null;
+  video_url?: string | null;
+  uploaded_video_id?: number | null;
   diagram_config?: DiagramConfig;
 }

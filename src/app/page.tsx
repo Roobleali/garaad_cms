@@ -298,8 +298,8 @@ export default function HomePage() {
     setCreateError("");
 
     // Generate a random unique ID not in use
-    const existingIds = categories.map(cat => cat.id);
-    let newId;
+    const existingIds = categories.map(cat => parseInt(cat.id)).filter(id => !isNaN(id));
+    let newId: number;
     do {
       newId = Math.floor(Math.random() * 1000000) + 1; // 1 to 1,000,000
     } while (existingIds.includes(newId));
