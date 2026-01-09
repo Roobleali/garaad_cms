@@ -31,6 +31,7 @@ interface Course {
   category: number | null;
   is_published: boolean;
   order?: number;
+  sequence?: number;
   tags?: string[];
 }
 
@@ -107,6 +108,7 @@ export default function HomePage() {
   const [newCourseDescription, setNewCourseDescription] = useState("");
   const [newCourseImage, setNewCourseImage] = useState("");
   const [newCourseCategory, setNewCourseCategory] = useState<number | null>(null);
+  const [newCourseSequence, setNewCourseSequence] = useState(0);
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [createCourseError, setCreateCourseError] = useState("");
   const [showEditCourse, setShowEditCourse] = useState(false);
@@ -115,6 +117,7 @@ export default function HomePage() {
   const [editCourseDescription, setEditCourseDescription] = useState("");
   const [editCourseImage, setEditCourseImage] = useState("");
   const [editCourseCategory, setEditCourseCategory] = useState<number | null>(null);
+  const [editCourseSequence, setEditCourseSequence] = useState(0);
   const [editingCourse, setEditingCourse] = useState(false);
   const [editCourseError, setEditCourseError] = useState("");
   const [showDeleteCategory, setShowDeleteCategory] = useState(false);
@@ -395,6 +398,7 @@ export default function HomePage() {
         description: newCourseDescription,
         thumbnail: newCourseImage || null,
         category: newCourseCategory,
+        sequence: newCourseSequence,
         is_published: newCourseIsPublished,
         author_id: 1  // Default author_id for Garaad
       });
@@ -404,6 +408,7 @@ export default function HomePage() {
       setNewCourseDescription("");
       setNewCourseImage("");
       setNewCourseCategory(null);
+      setNewCourseSequence(0);
       setNewCourseIsPublished(false);
       closeAllModals();
     } catch (err: unknown) {
@@ -433,6 +438,7 @@ export default function HomePage() {
         description: editCourseDescription,
         thumbnail: editCourseImage || null,
         category: editCourseCategory,
+        sequence: editCourseSequence,
         is_published: editCourseIsPublished
       });
 
@@ -649,6 +655,7 @@ export default function HomePage() {
                             setEditCourseDescription(course.description);
                             setEditCourseImage(course.thumbnail || "");
                             setEditCourseCategory(course.category);
+                            setEditCourseSequence(course.sequence || 0);
                             setEditCourseIsPublished(course.is_published);
                             openModal('editCourse');
                           }}
@@ -1103,6 +1110,19 @@ export default function HomePage() {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
+                      <div>
+                        <label htmlFor="course-sequence" className="block text-sm font-medium text-gray-700 mb-1">
+                          Sequence (Lambarka dhismaha)
+                        </label>
+                        <input
+                          type="number"
+                          id="course-sequence"
+                          value={newCourseSequence}
+                          onChange={(e) => setNewCourseSequence(parseInt(e.target.value) || 0)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
                       <div className="flex items-center">
                         <input
                           type="checkbox"
@@ -1211,6 +1231,19 @@ export default function HomePage() {
                           value={editCourseImage}
                           onChange={(e) => setEditCourseImage(e.target.value)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="edit-course-sequence" className="block text-sm font-medium text-gray-700 mb-1">
+                          Sequence (Lambarka dhismaha)
+                        </label>
+                        <input
+                          type="number"
+                          id="edit-course-sequence"
+                          value={editCourseSequence}
+                          onChange={(e) => setEditCourseSequence(parseInt(e.target.value) || 0)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
                         />
                       </div>
                       <div className="flex items-center">
