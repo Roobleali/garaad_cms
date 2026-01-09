@@ -144,7 +144,22 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
     const [videoUploading, setVideoUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Handle video upload
+    // Helper to get video duration
+    const getVideoDuration = (file: File): Promise<number> => {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = () => {
+                window.URL.revokeObjectURL(video.src);
+                resolve(Math.round(video.duration));
+            };
+            video.onerror = () => {
+                resolve(0);
+            };
+            video.src = URL.createObjectURL(file);
+        });
+    };
+
     const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>, setContent: (content: ContentBlockData) => void, content: ContentBlockData) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -165,6 +180,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             setUploadProgress(0);
             setError('');
 
+            // Get duration if possible
+            const duration = await getVideoDuration(file);
+
             const response = await api.post('lms/videos/', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -177,13 +195,21 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 },
             });
 
-            if (response.data) {
+            if (content.type === 'video') {
                 setContent({
                     ...content,
                     url: response.data.url,
-                    video_url: (content.type === 'problem' || content.type === 'quiz') ? response.data.url : undefined,
                     uploaded_video_id: response.data.id,
-                    duration: Math.round(response.data.duration || 0),
+                    duration: content.duration || duration || response.data.duration,
+                    video_source_type: 'upload'
+                });
+            } else if (content.type === 'problem' || content.type === 'quiz') {
+                setContent({
+                    ...content,
+                    url: response.data.url, // For preview in editor
+                    video_url: response.data.url,
+                    uploaded_video_id: response.data.id,
+                    duration: content.duration || duration || response.data.duration,
                     video_source_type: 'upload'
                 });
             }
