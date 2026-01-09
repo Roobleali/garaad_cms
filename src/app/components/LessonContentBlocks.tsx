@@ -150,9 +150,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
         if (!file) return;
 
         // Basic validation
-        const maxSize = 100 * 1024 * 1024; // 100MB
+        const maxSize = 500 * 1024 * 1024; // 500MB
         if (file.size > maxSize) {
-            setError('Muuqaalka waa inuu ka yaraadaa 100MB');
+            setError('Muuqaalka waa inuu ka yaraadaa 500MB');
             return;
         }
 
@@ -2843,7 +2843,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                         Guji si aad u soo gasho muuqaal
                                                     </span>
                                                     <span className="text-xs text-gray-400">
-                                                        MP4, WebM, MOV (Max. 100MB)
+                                                        MP4, WebM, MOV (Max. 500MB)
                                                     </span>
                                                 </div>
                                             )}
