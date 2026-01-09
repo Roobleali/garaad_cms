@@ -107,7 +107,7 @@ export default function HomePage() {
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseDescription, setNewCourseDescription] = useState("");
   const [newCourseImage, setNewCourseImage] = useState("");
-  const [newCourseCategory, setNewCourseCategory] = useState<number | null>(null);
+  const [newCourseCategory, setNewCourseCategory] = useState<string | null>(null);
   const [newCourseSequence, setNewCourseSequence] = useState(0);
   const [creatingCourse, setCreatingCourse] = useState(false);
   const [createCourseError, setCreateCourseError] = useState("");
@@ -116,7 +116,7 @@ export default function HomePage() {
   const [editCourseTitle, setEditCourseTitle] = useState("");
   const [editCourseDescription, setEditCourseDescription] = useState("");
   const [editCourseImage, setEditCourseImage] = useState("");
-  const [editCourseCategory, setEditCourseCategory] = useState<number | null>(null);
+  const [editCourseCategory, setEditCourseCategory] = useState<string | null>(null);
   const [editCourseSequence, setEditCourseSequence] = useState(0);
   const [editingCourse, setEditingCourse] = useState(false);
   const [editCourseError, setEditCourseError] = useState("");
@@ -338,7 +338,7 @@ export default function HomePage() {
     setEditError("");
 
     try {
-      const res = await api.put(`lms/categories/${editCategory.id}/`, {
+      const res = await api.patch(`lms/categories/${editCategory.id}/`, {
         id: editCategory.id,
         title: editTitle,
         description: editDescription,
@@ -433,7 +433,7 @@ export default function HomePage() {
     setEditCourseError("");
 
     try {
-      const res = await api.put(`lms/courses/${editCourse.id}/`, {
+      const res = await api.patch(`lms/courses/${editCourse.id}/`, {
         title: editCourseTitle,
         description: editCourseDescription,
         thumbnail: editCourseImage || null,
@@ -654,7 +654,7 @@ export default function HomePage() {
                             setEditCourseTitle(course.title);
                             setEditCourseDescription(course.description);
                             setEditCourseImage(course.thumbnail || "");
-                            setEditCourseCategory(course.category);
+                            setEditCourseCategory(course.category ? String(course.category) : null);
                             setEditCourseSequence(course.sequence || 0);
                             setEditCourseIsPublished(course.is_published);
                             openModal('editCourse');
@@ -1088,7 +1088,7 @@ export default function HomePage() {
                         <select
                           id="course-category"
                           value={newCourseCategory || ""}
-                          onChange={(e) => setNewCourseCategory(e.target.value ? parseInt(e.target.value) : null)}
+                          onChange={(e) => setNewCourseCategory(e.target.value || null)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
                         >
@@ -1211,7 +1211,7 @@ export default function HomePage() {
                         <select
                           id="edit-course-category"
                           value={editCourseCategory || ""}
-                          onChange={(e) => setEditCourseCategory(e.target.value ? parseInt(e.target.value) : null)}
+                          onChange={(e) => setEditCourseCategory(e.target.value || null)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           required
                         >
@@ -1540,7 +1540,7 @@ export default function HomePage() {
                         setEditingLesson(true);
                         setEditLessonError("");
 
-                        const response = await api.put(`lms/lessons/${editLesson?.id}/`, {
+                        const response = await api.patch(`lms/lessons/${editLesson?.id}/`, {
                           title: editLessonTitle,
                           slug: generateSlug(editLessonTitle),
                           course: editLessonCourse,
