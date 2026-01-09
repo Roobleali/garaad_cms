@@ -236,9 +236,12 @@ export default function HomePage() {
 
   useEffect(() => {
     if (section === "categories") {
-      setLoading(true);
       api.get("lms/categories/").then((res: ApiResponse<Category[]>) => {
-        setCategories(res.data.sort((a, b) => a.sequence - b.sequence));
+        setCategories(res.data.sort((a, b) => {
+          const seqA = (a.sequence && a.sequence > 0) ? a.sequence : -1;
+          const seqB = (b.sequence && b.sequence > 0) ? b.sequence : -1;
+          return seqB - seqA;
+        }));
         setLoading(false);
       }).catch(error => {
         console.error("Error fetching categories:", error);
@@ -653,43 +656,50 @@ export default function HomePage() {
               <div className="text-center text-gray-500">Soo loading...</div>
             ) : (
               <div className="space-y-2">
-                {courses.filter(course => course.title.toLowerCase().includes(courseSearch.toLowerCase())).map(course => (
-                  <div key={course.id} className="p-4 bg-white rounded shadow flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-lg text-blue-700">{course.title}</div>
-                      <div className="text-gray-500 text-sm">{course.description}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {course.thumbnail && <img src={course.thumbnail} alt={course.title} className="w-10 h-10 rounded object-cover ml-4" />}
-                      <div className="flex gap-2">
-                        <button
-                          className="px-3 py-1 rounded bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-sm"
-                          onClick={() => {
-                            setEditCourse(course);
-                            setEditCourseTitle(course.title);
-                            setEditCourseDescription(course.description);
-                            setEditCourseImage(course.thumbnail || "");
-                            setEditCourseCategory(course.category ? String(course.category) : null);
-                            setEditCourseSequence(course.sequence || 0);
-                            setEditCourseIsPublished(course.is_published);
-                            openModal('editCourse');
-                          }}
-                        >
-                          Wax ka beddel
-                        </button>
-                        <button
-                          className="px-3 py-1 rounded bg-red-100 text-red-800 hover:bg-red-200 text-sm"
-                          onClick={() => {
-                            setDeletingCourse(course);
-                            openModal('deleteCourse');
-                          }}
-                        >
-                          Tir
-                        </button>
+                {courses
+                  .filter(course => course.title.toLowerCase().includes(courseSearch.toLowerCase()))
+                  .sort((a, b) => {
+                    const seqA = (a.sequence && a.sequence > 0) ? a.sequence : -1;
+                    const seqB = (b.sequence && b.sequence > 0) ? b.sequence : -1;
+                    return seqB - seqA;
+                  })
+                  .map(course => (
+                    <div key={course.id} className="p-4 bg-white rounded shadow flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-lg text-blue-700">{course.title}</div>
+                        <div className="text-gray-500 text-sm">{course.description}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {course.thumbnail && <img src={course.thumbnail} alt={course.title} className="w-10 h-10 rounded object-cover ml-4" />}
+                        <div className="flex gap-2">
+                          <button
+                            className="px-3 py-1 rounded bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-sm"
+                            onClick={() => {
+                              setEditCourse(course);
+                              setEditCourseTitle(course.title);
+                              setEditCourseDescription(course.description);
+                              setEditCourseImage(course.thumbnail || "");
+                              setEditCourseCategory(course.category ? String(course.category) : null);
+                              setEditCourseSequence(course.sequence || 0);
+                              setEditCourseIsPublished(course.is_published);
+                              openModal('editCourse');
+                            }}
+                          >
+                            Wax ka beddel
+                          </button>
+                          <button
+                            className="px-3 py-1 rounded bg-red-100 text-red-800 hover:bg-red-200 text-sm"
+                            onClick={() => {
+                              setDeletingCourse(course);
+                              openModal('deleteCourse');
+                            }}
+                          >
+                            Tir
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 {courses.length === 0 && <div className="text-gray-400 text-center">Koorsooyin lama helin.</div>}
               </div>
             )}
