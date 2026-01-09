@@ -16,7 +16,7 @@ interface ApiErrorResponse {
 }
 
 interface Category {
-  id: number;
+  id: string;
   title: string;
   description: string;
   image?: string;
@@ -28,7 +28,7 @@ interface Course {
   title: string;
   description: string;
   thumbnail?: string;
-  category: number | null;
+  category: string | null;
   is_published: boolean;
   order?: number;
   sequence?: number;
