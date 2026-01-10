@@ -184,6 +184,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             formData.append('title', content.title || file.name);
 
             const response = await api.post('lms/videos/', formData, {
+                headers: {
+                    "Content-Type": undefined,
+                },
                 onUploadProgress: (progressEvent) => {
                     const progress = progressEvent.total
                         ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
