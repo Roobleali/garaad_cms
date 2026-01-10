@@ -30,6 +30,7 @@ export interface ContentBlockData {
   title?: string;
   text?: string;
   url?: string;
+  source?: string;
   url1?: string;
   url2?: string;
   url3?: string;

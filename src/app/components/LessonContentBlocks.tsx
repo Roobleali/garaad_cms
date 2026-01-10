@@ -3,9 +3,10 @@ import { api } from '@/app/api';
 import type { ContentBlock, ContentBlockData, Option, DiagramConfig, DiagramObject, ProblemData } from '../types/content';
 import { ContentBlockModal } from './ContentBlockModal';
 import { Modal } from './ui/Modal';
-import { Plus, Trash2, Upload, Loader2, Video, Link } from 'lucide-react';
+import { Video, Link, Trash2, Plus, Upload, Loader2, X, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import { DEFAULT_CONTENT, DIAGRAM_EXAMPLE, MULTIPLE_CHOICE_EXAMPLE, TABLE_EXAMPLE, DEFAULT_DIAGRAM_CONFIG, LIST_EXAMPLE } from '@/lib/Block_Examples';
+import { RichTextEditor } from './ui/RichTextEditor';
 
 interface ApiErrorResponse {
     detail?: string;
@@ -138,11 +139,11 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
     const [adding, setAdding] = useState(false);
     const [editError, setEditError] = useState('');
     const [deleteError, setDeleteError] = useState('');
+    const [videoUploading, setVideoUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [textFieldCount, setTextFieldCount] = useState(1);
     const [tableType, setTableType] = useState<string>('');
     const [tableFeatures, setTableFeatures] = useState<TableFeature[]>([]);
-    const [videoUploading, setVideoUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
 
     // Helper to get video duration
     const getVideoDuration = (file: File): Promise<number> => {
@@ -171,22 +172,18 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             return;
         }
 
-        const formData = new FormData();
-        formData.append('video', file);
-        formData.append('title', content.title || file.name);
-
         try {
+            const duration = await getVideoDuration(file);
+
             setVideoUploading(true);
             setUploadProgress(0);
             setError('');
 
-            // Get duration if possible
-            const duration = await getVideoDuration(file);
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('title', content.title || file.name);
 
             const response = await api.post('lms/videos/', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
                 onUploadProgress: (progressEvent) => {
                     const progress = progressEvent.total
                         ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -199,6 +196,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 setContent({
                     ...content,
                     url: response.data.url,
+                    source: response.data.url,
                     uploaded_video_id: response.data.id,
                     duration: content.duration || duration || response.data.duration,
                     video_source_type: 'upload'
@@ -207,6 +205,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 setContent({
                     ...content,
                     url: response.data.url, // For preview in editor
+                    source: response.data.url,
                     video_url: response.data.url,
                     uploaded_video_id: response.data.id,
                     duration: content.duration || duration || response.data.duration,
@@ -248,6 +247,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             fetchBlocks();
         }
     }, [lessonId]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const handleAddBlock = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -354,6 +359,11 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 // Add img if provided
                 if (editingContent.img) {
                     problemData.img = editingContent.img;
+                }
+
+                // Add video_url if provided
+                if (editingContent.video_url) {
+                    problemData.video_url = editingContent.video_url;
                 }
 
                 try {
@@ -767,6 +777,11 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     problemData.img = editingContent.img;
                 }
 
+                // Add video_url if provided
+                if (editingContent.video_url) {
+                    problemData.video_url = editingContent.video_url;
+                }
+
                 try {
                     console.log('Updating problem with data:', JSON.stringify(problemData, null, 2));
                     await api.put(`lms/problems/${editingBlock.problem}/`, problemData);
@@ -1067,7 +1082,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         {content.type === 'list' ? 'Liiska' :
                             content.type === 'table' ? 'Jadwal' :
                                 content.type === 'table-grid' ? 'Jadwal Grid' :
-                                    content.type === 'video' ? 'Muuqaal' :
+                                    (content.type === 'video') ? 'Muuqaal' :
                                         'Qoraal'}
                     </p>
                 </div>
@@ -1294,12 +1309,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                             <label htmlFor="tableText" className="block text-sm font-medium text-gray-700 mb-2">
                                 Qoraalka Guud
                             </label>
-                            <textarea
-                                id="tableText"
-                                value={content.text || ''}
-                                onChange={(e) => setContent({ ...content, text: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                                rows={4}
+                            <RichTextEditor
+                                content={content.text || ''}
+                                onChange={(newVal) => setContent({ ...content, text: newVal })}
+                                placeholder="Geli qoraalka guud..."
                             />
                         </div>
 
@@ -1359,16 +1372,14 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             <label htmlFor={`feature-text-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                                                 Qoraal
                                             </label>
-                                            <textarea
-                                                id={`feature-text-${index}`}
-                                                value={feature.text}
-                                                onChange={(e) => {
+                                            <RichTextEditor
+                                                content={feature.text || ''}
+                                                onChange={(newVal) => {
                                                     const newFeatures = [...(content.features || [])];
-                                                    newFeatures[index] = { ...feature, text: e.target.value };
+                                                    newFeatures[index] = { ...feature, text: newVal };
                                                     setContent({ ...content, features: newFeatures });
                                                 }}
-                                                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                                                rows={3}
+                                                placeholder="Geli qoraalka..."
                                             />
                                         </div>
                                     </div>
@@ -1414,12 +1425,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                             <label htmlFor="tableGridText" className="block text-sm font-medium text-gray-700 mb-2">
                                 Qoraalka Guud
                             </label>
-                            <textarea
-                                id="tableGridText"
-                                value={content.text || ''}
-                                onChange={(e) => setContent({ ...content, text: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                                rows={4}
+                            <RichTextEditor
+                                content={content.text || ''}
+                                onChange={(newVal) => setContent({ ...content, text: newVal })}
                                 placeholder="Tixgeli tusaale ahaan halka (m = 569) (s = 1187) iyo (n = 447)..."
                             />
                         </div>
@@ -1739,13 +1747,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                 >
                                     Qoraalka
                                 </label>
-                                <textarea
-                                    id="content-text"
-                                    value={content.text}
-                                    onChange={(e) => setContent({ ...content, text: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[200px]"
+                                <RichTextEditor
+                                    content={content.text || ''}
+                                    onChange={(newVal) => setContent({ ...content, text: newVal })}
                                     placeholder="Geli qoraalka..."
-                                    required
                                 />
                             </div>
 
@@ -1769,11 +1774,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         >
                                             Qoraalka {index}
                                         </label>
-                                        <textarea
-                                            id={`content-text-${index}`}
-                                            value={content[textKey] as string || ''}
-                                            onChange={(e) => setContent({ ...content, [textKey]: e.target.value })}
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[150px]"
+                                        <RichTextEditor
+                                            content={content[textKey] as string || ''}
+                                            onChange={(newVal) => setContent({ ...content, [textKey]: newVal })}
                                             placeholder={`Geli qoraalka ${index}...`}
                                         />
                                     </div>
@@ -1866,11 +1869,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     >
                                         Qoraalka ka horreeya su&apos;aasha (Optional)
                                     </label>
-                                    <textarea
-                                        id="question-prefix"
-                                        value={content.which || ''}
-                                        onChange={(e) => setContent({ ...content, which: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[100px]"
+                                    <RichTextEditor
+                                        content={content.which || ''}
+                                        onChange={(newVal) => setContent({ ...content, which: newVal })}
                                         placeholder="Qoraalka ka horreeya su'aasha..."
                                     />
                                 </div>
@@ -1882,13 +1883,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     >
                                         Su&apos;aasha
                                     </label>
-                                    <textarea
-                                        id="question-text"
-                                        value={content.question_text || ''}
-                                        onChange={(e) => setContent({ ...content, question_text: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[150px]"
+                                    <RichTextEditor
+                                        content={content.question_text || ''}
+                                        onChange={(newVal) => setContent({ ...content, question_text: newVal })}
                                         placeholder="Geli su'aasha..."
-                                        required
                                     />
                                 </div>
 
@@ -2765,10 +2763,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                 </h4>
                             </div>
                             <div className="p-6">
-                                <textarea
-                                    value={content.explanation || ''}
-                                    onChange={(e) => setContent({ ...content, explanation: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[150px]"
+                                <RichTextEditor
+                                    content={content.explanation || ''}
+                                    onChange={(newVal) => setContent({ ...content, explanation: newVal })}
                                     placeholder="Sharaxaad ku saabsan jawaabta saxda ah..."
                                 />
                             </div>
@@ -2904,11 +2901,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                             <div>
                                 <label htmlFor="video-description" className="block text-sm font-medium mb-2 text-gray-900">Sharaxaada Muuqaalka (Ikhtiyaari)</label>
-                                <textarea
-                                    id="video-description"
-                                    value={content.description || ''}
-                                    onChange={(e) => setContent({ ...content, description: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[100px]"
+                                <RichTextEditor
+                                    content={content.description || ''}
+                                    onChange={(newVal) => setContent({ ...content, description: newVal })}
                                     placeholder="Sharaxaada muuqaalka..."
                                 />
                             </div>
@@ -2936,11 +2931,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         <div className="p-6 space-y-6">
                             <div>
                                 <label htmlFor="quiz-question" className="block text-sm font-medium mb-2 text-gray-900">Su&apos;aasha Quiz-ka</label>
-                                <textarea
-                                    id="quiz-question"
-                                    value={content.text || ''}
-                                    onChange={(e) => setContent({ ...content, text: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[100px]"
+                                <RichTextEditor
+                                    content={content.text || ''}
+                                    onChange={(newVal) => setContent({ ...content, text: newVal })}
                                     placeholder="Geli su'aasha quiz-ka..."
                                 />
                             </div>
@@ -3089,11 +3082,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                             <div>
                                 <label htmlFor="quiz-explanation" className="block text-sm font-medium mb-2 text-gray-900">Sharaxaada (Optional)</label>
-                                <textarea
-                                    id="quiz-explanation"
-                                    value={content.explanation || ''}
-                                    onChange={(e) => setContent({ ...content, explanation: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 min-h-[100px]"
+                                <RichTextEditor
+                                    content={content.explanation || ''}
+                                    onChange={(newVal) => setContent({ ...content, explanation: newVal })}
                                     placeholder="Sharaxaad ku saabsan jawaabta saxda ah..."
                                 />
                             </div>
@@ -3216,10 +3207,18 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                     } else {
                                                                         const content = typeof block.content === 'string' ?
                                                                             JSON.parse(block.content) : block.content;
-                                                                        setEditingContent({
+
+                                                                        // Ensure type is 'video' if block_type is 'video'
+                                                                        const editingContentData = {
                                                                             ...content,
                                                                             order: block.order
-                                                                        });
+                                                                        };
+
+                                                                        if (editingContentData.type === 'video') {
+                                                                            // type is already video
+                                                                        }
+
+                                                                        setEditingContent(editingContentData);
                                                                     }
                                                                     setEditingBlock(block);
                                                                     setShowEditBlock(true);
@@ -3350,4 +3349,4 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             </Modal>
         </div>
     );
-} 
+}

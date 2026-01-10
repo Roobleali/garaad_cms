@@ -5,11 +5,9 @@ import Sidebar from "./Sidebar";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
-    section: string;
-    setSection: (s: string) => void;
 }
 
-export default function DashboardLayout({ children, section, setSection }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -28,13 +26,6 @@ export default function DashboardLayout({ children, section, setSection }: Dashb
 
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    // Close sidebar when section changes on mobile
-    useEffect(() => {
-        if (isMobile) {
-            setIsSidebarOpen(false);
-        }
-    }, [section, isMobile]);
 
     return (
         <div className="min-h-screen bg-gray-50 lg:flex">
@@ -76,7 +67,7 @@ export default function DashboardLayout({ children, section, setSection }: Dashb
                     ${isMobile ? "w-[280px]" : "w-[280px] lg:w-[300px] xl:w-[320px]"}
                 `}
             >
-                <Sidebar section={section} setSection={setSection} />
+                <Sidebar />
             </aside>
 
             {/* Overlay */}
