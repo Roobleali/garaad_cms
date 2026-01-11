@@ -408,7 +408,7 @@ export default function CasharadaPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Waqtiga qiyaasta ah (daqiiqo)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Waqtiga qiyaasta ah (Ikhtiyaari)</label>
                             <input
                                 type="number"
                                 className="w-full border rounded-lg px-4 py-2"
@@ -486,7 +486,7 @@ export default function CasharadaPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Waqtiga qiyaasta ah (daqiiqo)</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Waqtiga qiyaasta ah (Ikhtiyaari)</label>
                             <input
                                 type="number"
                                 className="w-full border rounded-lg px-4 py-2"
