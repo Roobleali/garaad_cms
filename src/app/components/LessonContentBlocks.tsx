@@ -462,12 +462,6 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             } else if (editingContent.type === 'quiz') {
                 // Explicitly handle quiz type
                 const blockData = {
-                    block_type: 'video', // Quiz blocks use video block_type for now if they have a video, or 'text'? 
-                    // Actually, the user says "when i save video type question why it shows me as qoraal".
-                    // If it's a quiz with a video, maybe it should be 'video' block_type or 'text' with type 'quiz'.
-                    // Let's check BLOCK_TYPES in models.py: ('text', 'Text Block'), ('video', 'Video Block'), ('quiz', 'Quiz Block'), ('problem', 'Problem Block')
-                    // CMS seems to map 'quiz' to 'text' with type 'quiz' in some places but let's see.
-                    // Wait, LessonContentBlock model HAS 'quiz' block_type.
                     block_type: 'quiz',
                     content: {
                         type: 'quiz',

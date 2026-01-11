@@ -90,12 +90,13 @@ export interface ContentBlockData {
   duration?: number;
   video_source_type?: 'upload' | 'external';
   uploaded_video_id?: number | null;
+  uploaded_video?: number | null;
   video_url?: string | null;
 }
 
 export interface ContentBlock {
   id: number;
-  block_type: "text" | "problem";
+  block_type: "text" | "problem" | "video" | "quiz" | "example" | "code" | "image";
   content: ContentBlockData;
   order: number;
   lesson: number;
@@ -130,5 +131,6 @@ export interface ProblemData {
   img?: string | null;
   video_url?: string | null;
   uploaded_video_id?: number | null;
+  uploaded_video?: number | null;
   diagram_config?: DiagramConfig;
 }
