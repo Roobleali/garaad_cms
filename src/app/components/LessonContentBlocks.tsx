@@ -369,6 +369,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     problemData.video_url = editingContent.video_url;
                 }
 
+                if (editingContent.uploaded_video_id) {
+                    problemData.uploaded_video = editingContent.uploaded_video_id;
+                }
+
                 try {
                     console.log('Creating problem with data:', JSON.stringify(problemData, null, 2));
                     const problemResponse = await api.post('lms/problems/', problemData);
@@ -455,6 +459,41 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     }
                     throw error;
                 }
+            } else if (editingContent.type === 'quiz') {
+                // Explicitly handle quiz type
+                const blockData = {
+                    block_type: 'video', // Quiz blocks use video block_type for now if they have a video, or 'text'? 
+                    // Actually, the user says "when i save video type question why it shows me as qoraal".
+                    // If it's a quiz with a video, maybe it should be 'video' block_type or 'text' with type 'quiz'.
+                    // Let's check BLOCK_TYPES in models.py: ('text', 'Text Block'), ('video', 'Video Block'), ('quiz', 'Quiz Block'), ('problem', 'Problem Block')
+                    // CMS seems to map 'quiz' to 'text' with type 'quiz' in some places but let's see.
+                    // Wait, LessonContentBlock model HAS 'quiz' block_type.
+                    block_type: 'quiz',
+                    content: {
+                        type: 'quiz',
+                        text: editingContent.text || '',
+                        title: editingContent.title || '',
+                        url: editingContent.url || '',
+                        video_url: editingContent.video_url || '',
+                        uploaded_video_id: editingContent.uploaded_video_id || null,
+                        video_source_type: editingContent.video_source_type || 'upload'
+                    },
+                    order: specifiedOrder,
+                    lesson: lessonId
+                };
+
+                const response = await api.post('lms/lesson-content-blocks/', blockData);
+
+                if (response.data) {
+                    const updatedBlocks = [...blocks];
+                    updatedBlocks.splice(specifiedOrder, 0, response.data);
+                    updatedBlocks.forEach((b, index) => { b.order = index; });
+                    setBlocks(updatedBlocks);
+                    setEditingContent(DEFAULT_CONTENT);
+                    setShowAddBlock(false);
+                    setTextFieldCount(1);
+                    if (onUpdate) onUpdate();
+                }
             } else if (editingContent.type === 'table' || editingContent.type === 'table-grid') {
                 // Handle table and table-grid types
                 const blockData = {
@@ -495,10 +534,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 const blockData = {
                     block_type: 'video',
                     content: {
+                        type: 'video', // CRITICAL: Ensure type is set to video
                         url: editingContent.url || '',
                         title: editingContent.title || '',
                         description: editingContent.description || '',
-                        duration: editingContent.duration || null
+                        duration: editingContent.duration || null,
+                        video_source_type: editingContent.video_source_type || 'upload'
                     },
                     order: specifiedOrder,
                     lesson: lessonId
@@ -785,6 +826,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     problemData.video_url = editingContent.video_url;
                 }
 
+                if (editingContent.uploaded_video_id) {
+                    problemData.uploaded_video = editingContent.uploaded_video_id;
+                }
+
                 try {
                     console.log('Updating problem with data:', JSON.stringify(problemData, null, 2));
                     await api.put(`lms/problems/${editingBlock.problem}/`, problemData);
@@ -855,6 +900,36 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     }
                     throw error;
                 }
+            } else if (editingContent.type === 'quiz') {
+                // Explicitly handle quiz update
+                const blockData = {
+                    ...editingBlock,
+                    block_type: 'quiz',
+                    content: {
+                        type: 'quiz',
+                        text: editingContent.text || '',
+                        title: editingContent.title || '',
+                        url: editingContent.url || '',
+                        video_url: editingContent.video_url || '',
+                        uploaded_video_id: editingContent.uploaded_video_id || null,
+                        video_source_type: editingContent.video_source_type || 'upload'
+                    },
+                    order: editingContent.order || editingBlock.order,
+                    lesson: lessonId
+                };
+
+                const response = await api.put(`lms/lesson-content-blocks/${editingBlock.id}/`, blockData);
+
+                if (response.data) {
+                    setBlocks(prevBlocks =>
+                        prevBlocks.map(b => b.id === editingBlock.id ? response.data : b)
+                    );
+                    setEditingBlock(null);
+                    setEditingContent(DEFAULT_CONTENT);
+                    setShowEditBlock(false);
+                    setTextFieldCount(1);
+                    if (onUpdate) onUpdate();
+                }
             } else if (editingContent.type === 'table' || editingContent.type === 'table-grid') {
                 // Handle table type
                 const blockData = {
@@ -894,10 +969,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     ...editingBlock,
                     block_type: 'video',
                     content: {
+                        type: 'video', // CRITICAL: Ensure type is set to video
                         url: editingContent.url || '',
                         title: editingContent.title || '',
                         description: editingContent.description || '',
-                        duration: editingContent.duration || null
+                        duration: editingContent.duration || null,
+                        video_source_type: editingContent.video_source_type || 'upload'
                     },
                     order: editingContent.order || editingBlock.order,
                     lesson: lessonId
@@ -1085,8 +1162,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         {content.type === 'list' ? 'Liiska' :
                             content.type === 'table' ? 'Jadwal' :
                                 content.type === 'table-grid' ? 'Jadwal Grid' :
-                                    (content.type === 'video') ? 'Muuqaal' :
-                                        'Qoraal'}
+                                    (content.type === 'video' || block.block_type === 'video') ? 'Muuqaal' :
+                                        (content.type === 'quiz' || block.block_type === 'quiz') ? 'Quiz' :
+                                            'Qoraal'}
                     </p>
                 </div>
                 {content.type === 'list' && content.text && (
@@ -1097,22 +1175,27 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     </ul>
                 )}
                 {content.type !== 'list' && content.text && <div className="text-gray-700">{content.text}</div>}
-                {content.url && (
-                    content.type === 'video' || content.type === 'quiz' ? (
+                {(content.url || content.video_url) && (
+                    content.type === 'video' || block.block_type === 'video' || content.type === 'quiz' || block.block_type === 'quiz' ? (
                         <div className="max-w-md aspect-video rounded-lg overflow-hidden bg-black">
                             <video
-                                src={content.url}
+                                src={content.url || content.video_url}
                                 controls
                                 className="w-full h-full"
                             />
                         </div>
-                    ) : (
+                    ) : content.url ? (
                         <img
                             src={content.url}
                             alt={content.title}
                             className="w-full max-w-md h-auto rounded-lg"
                         />
-                    )
+                    ) : null
+                )}
+                {content.url && (
+                    <p className="text-xs text-gray-500 font-mono break-all bg-gray-50 p-2 rounded border border-gray-100 max-w-md">
+                        {content.url}
+                    </p>
                 )}
                 {content.text1 && <div className="text-gray-700">{content.text1}</div>}
                 {content.text2 && <div className="text-gray-700">{content.text2}</div>}
@@ -3211,15 +3294,17 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                         const content = typeof block.content === 'string' ?
                                                                             JSON.parse(block.content) : block.content;
 
-                                                                        // Ensure type is 'video' if block_type is 'video'
+                                                                        // Ensure type is correctly set based on block_type
+                                                                        let inferredType = content.type;
+                                                                        if (block.block_type === 'video') inferredType = 'video';
+                                                                        else if (block.block_type === 'quiz') inferredType = 'quiz';
+                                                                        else if (!inferredType || inferredType === 'text') inferredType = 'qoraal';
+
                                                                         const editingContentData = {
                                                                             ...content,
-                                                                            order: block.order
+                                                                            order: block.order,
+                                                                            type: inferredType
                                                                         };
-
-                                                                        if (editingContentData.type === 'video') {
-                                                                            // type is already video
-                                                                        }
 
                                                                         setEditingContent(editingContentData);
                                                                     }
@@ -3305,8 +3390,8 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 }}
                 onSubmit={showAddBlock ? handleAddBlock : handleUpdateBlock}
                 title={showAddBlock
-                    ? (editingContent.type === 'qoraal' ? 'Qoraal cusub' : 'Su\'aal cusub')
-                    : (editingContent.type === 'qoraal' ? 'Wax ka beddel Qoraalka' : 'Wax ka beddel Su\'aalka')
+                    ? (editingContent.type === 'qoraal' ? 'Qoraal cusub' : editingContent.type === 'video' ? 'Muuqaal cusub' : editingContent.type === 'quiz' ? 'Quiz cusub' : 'Su\'aal cusub')
+                    : (editingContent.type === 'qoraal' ? 'Wax ka beddel Qoraalka' : editingContent.type === 'video' ? 'Wax ka beddel Muuqaalka' : editingContent.type === 'quiz' ? 'Wax ka beddel Quiz-ka' : 'Wax ka beddel Su\'aalka')
                 }
                 content={editingContent}
                 setContent={setEditingContent}
