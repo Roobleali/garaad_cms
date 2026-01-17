@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/auth";
 import { api, ApiError } from "../api";
 import Image from "next/image";
+import Link from "next/link";
 
 interface User {
     id: number;
@@ -158,6 +159,14 @@ export default function LoginPage() {
                             required
                             disabled={loading}
                         />
+                        <div className="flex justify-end mt-2">
+                            <Link
+                                href="/forgot-password"
+                                className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                                Ma ilaawday sirta (Forgot Password)?
+                            </Link>
+                        </div>
                     </div>
                     <button
                         type="submit"
