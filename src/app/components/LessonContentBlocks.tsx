@@ -528,7 +528,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 const blockData = {
                     block_type: 'video',
                     content: {
-                        type: 'video', // CRITICAL: Ensure type is set to video
+                        source: editingContent.url || '',
                         url: editingContent.url || '',
                         title: editingContent.title || '',
                         description: editingContent.description || '',
@@ -963,7 +963,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     ...editingBlock,
                     block_type: 'video',
                     content: {
-                        type: 'video', // CRITICAL: Ensure type is set to video
+                        source: editingContent.url || '',
                         url: editingContent.url || '',
                         title: editingContent.title || '',
                         description: editingContent.description || '',
@@ -1119,11 +1119,17 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 order: index
             }));
 
-            // Update the blocks in state first
+            // Update the blocks in state first (optimistic UI)
             setBlocks(reorderedBlocks);
 
-            // Then update on the server
-            await api.post(`lms/lesson-content-blocks/${blockId}/reorder/`, { order: newOrder });
+            // Prepare the block order array (IDs in the new order)
+            const blockOrder = reorderedBlocks.map(b => b.id);
+
+            // FIXED: Use collection-level endpoint with correct payload format
+            await api.post(`lms/lesson-content-blocks/reorder/`, {
+                lesson_id: lessonId,
+                block_order: blockOrder
+            });
 
             if (onUpdate) onUpdate();
         } catch (err) {
