@@ -92,6 +92,7 @@ export interface ContentBlockData {
   uploaded_video_id?: number | null;
   uploaded_video?: number | null;
   video_url?: string | null;
+  thumbnail_url?: string | null;
 }
 
 export interface ContentBlock {
@@ -130,6 +131,7 @@ export interface ProblemData {
   order: number;
   img?: string | null;
   video_url?: string | null;
+  thumbnail_url?: string | null;
   uploaded_video_id?: number | null;
   uploaded_video?: number | null;
   diagram_config?: DiagramConfig;

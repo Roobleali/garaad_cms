@@ -90,7 +90,9 @@ const ProblemContent = ({
                 {problemContent.video_url && (
                     <div className="md:w-48 md:h-32 rounded-lg overflow-hidden flex-shrink-0 bg-black">
                         <video
-                            src={problemContent.video_url}
+                            src={`${problemContent.video_url}#t=0.1`}
+                            poster={problemContent.thumbnail_url || undefined}
+                            preload="metadata"
                             className="w-full h-full object-cover"
                         />
                     </div>
@@ -166,9 +168,9 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
         if (!file) return;
 
         // Basic validation
-        const maxSize = 500 * 1024 * 1024; // 500MB
+        const maxSize = 2 * 1024 * 1024 * 1024; // 2GB (Telegram limit)
         if (file.size > maxSize) {
-            setError('Muuqaalka waa inuu ka yaraadaa 500MB');
+            setError('Muuqaalka waa inuu ka yaraadaa 2GB');
             return;
         }
 
@@ -200,6 +202,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     ...content,
                     url: response.data.url,
                     source: response.data.url,
+                    thumbnail_url: response.data.thumbnail_url,
                     uploaded_video_id: response.data.id,
                     duration: content.duration || duration || response.data.duration,
                     video_source_type: 'upload'
@@ -210,6 +213,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     url: response.data.url, // For preview in editor
                     source: response.data.url,
                     video_url: response.data.url,
+                    thumbnail_url: response.data.thumbnail_url,
                     uploaded_video_id: response.data.id,
                     duration: content.duration || duration || response.data.duration,
                     video_source_type: 'upload'
@@ -1179,8 +1183,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     content.type === 'video' || block.block_type === 'video' || content.type === 'quiz' || block.block_type === 'quiz' ? (
                         <div className="max-w-md aspect-video rounded-lg overflow-hidden bg-black">
                             <video
-                                src={content.url || content.video_url}
+                                src={`${content.url || content.video_url}#t=0.1`}
+                                poster={content.thumbnail_url || undefined}
                                 controls
+                                preload="metadata"
                                 className="w-full h-full"
                             />
                         </div>
@@ -1668,7 +1674,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         type: 'qoraal',
                                         title: 'Lacagta Dhijitaalka ah',
                                         text: 'Si loo fahmo lacagta dhijitaalka ah iyo runta ka dambeysa sheegashooyinkan, waxay gacan ka geysaneysaa in la fahmo aasaaska lacagta guud ahaan. Aan bilowno.\n\nLacagaha dhijitaalka ah waa hab cusub oo lagu kala beddelan karo badeecadaha iyo adeegyada.\n\nWaxay ku shaqeeyaan \'blockchains\' - qaab dhismeed xogeed oo si sir ah loo ilaaliyo. Taageerayaashoodu waxay ku doodayaan inay hoos u dhigi doonaan khidmadaha wax kala iibsiga isla markaana dimuqraadiyeyn doonaan siyaasadda lacagta, halka kuwa dhaleeceeya ay sheegayaan inay yihiin riyooyin xisaabyahanno oo dib loogu soo celiyay khiyaano.',
-                                        url: 'https://res.cloudinary.com/do3dahfvh/image/upload/t_reduceheight/garaad/q4yxp1q0v8lkqvj5dszg'
+                                        url: ''
                                     })}
                                     className="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium transition-all duration-200"
                                 >
@@ -2090,8 +2096,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             {content.video_url && !videoUploading && (
                                                 <div className="aspect-video w-full rounded-lg overflow-hidden bg-black shadow-inner">
                                                     <video
-                                                        src={content.video_url}
+                                                        src={`${content.video_url}#t=0.1`}
+                                                        poster={content.thumbnail_url || undefined}
                                                         controls
+                                                        preload="metadata"
                                                         className="w-full h-full"
                                                     />
                                                 </div>
@@ -2952,7 +2960,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                         Guji si aad u soo gasho muuqaal
                                                     </span>
                                                     <span className="text-xs text-gray-400">
-                                                        MP4, WebM, MOV (Max. 500MB)
+                                                        MP4, WebM, MOV (Max. 2GB)
                                                     </span>
                                                 </div>
                                             )}
@@ -2961,8 +2969,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     {content.url && !videoUploading && (
                                         <div className="aspect-video w-full rounded-lg overflow-hidden bg-black shadow-inner">
                                             <video
-                                                src={content.url}
+                                                src={`${content.url}#t=0.1`}
+                                                poster={content.thumbnail_url || undefined}
                                                 controls
+                                                preload="metadata"
                                                 className="w-full h-full"
                                             />
                                         </div>
