@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api, ApiError } from "../api";
 import DashboardLayout from "../components/DashboardLayout";
-import LessonContentBlocks from "../components/LessonContentBlocks";
 import { Modal } from "../components/ui/Modal";
+import { Plus, Search, BookOpen, Clock, Layers, Edit, Trash2, Eye } from "lucide-react";
 
 interface Course {
     id: number;
@@ -24,22 +25,16 @@ interface Lesson {
     updated_at: string;
 }
 
-export default function CasharadaPage() {
+function CasharadaContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const courseFilter = searchParams.get('course');
+
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
-    const [activeCourseId, setActiveCourseId] = useState<number | 'all' | 'none'>('all');
-
-    // Create modal states
-    const [showCreate, setShowCreate] = useState(false);
-    const [newTitle, setNewTitle] = useState("");
-    const [newCourse, setNewCourse] = useState<number | null>(null);
-    const [newLessonNumber, setNewLessonNumber] = useState<number | null>(null);
-    const [newEstimatedTime, setNewEstimatedTime] = useState<number | null>(null);
-    const [newIsPublished, setNewIsPublished] = useState(false);
-    const [creating, setCreating] = useState(false);
-    const [createError, setCreateError] = useState("");
+    const [activeCourseId, setActiveCourseId] = useState<number | 'all' | 'none'>(courseFilter ? parseInt(courseFilter) : 'all');
 
     // Edit modal states
     const [showEdit, setShowEdit] = useState(false);
@@ -79,35 +74,6 @@ export default function CasharadaPage() {
             console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setCreating(true);
-        setCreateError("");
-
-        try {
-            const res = await api.post("lms/lessons/", {
-                title: newTitle,
-                course: newCourse,
-                lesson_number: newLessonNumber,
-                estimated_time: newEstimatedTime,
-                is_published: newIsPublished
-            });
-
-            setLessons([...lessons, res.data]);
-            setNewTitle("");
-            setNewCourse(null);
-            setNewLessonNumber(null);
-            setNewEstimatedTime(null);
-            setNewIsPublished(false);
-            setShowCreate(false);
-        } catch (err: unknown) {
-            const apiError = err as ApiError;
-            setCreateError(apiError.response?.data?.detail || apiError.message || "Cashar lama sameyn karin");
-        } finally {
-            setCreating(false);
         }
     };
 
@@ -196,21 +162,9 @@ export default function CasharadaPage() {
                     </div>
                     <button
                         className="h-12 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                        onClick={() => setShowCreate(true)}
+                        onClick={() => router.push('/casharada/cusub')}
                     >
-                        <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
+                        <Plus className="w-5 h-5" />
                         <span>Cashar cusub</span>
                     </button>
                 </div>
@@ -275,85 +229,80 @@ export default function CasharadaPage() {
                                 return lesson.course === activeCourseId;
                             })
                             .map(lesson => (
-                                <div key={lesson.id} className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 group">
-                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
+                                <div key={lesson.id} className="p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 group relative">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3">
-                                                <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 text-sm font-bold">
+                                            <div className="flex items-center gap-4 mb-3">
+                                                <span className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 text-base font-bold shadow-inner">
                                                     {lesson.lesson_number || '#'}
                                                 </span>
-                                                <div className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                                                <div className="font-bold text-xl text-gray-900 group-hover:text-blue-600 transition-colors truncate">
                                                     {lesson.title}
                                                 </div>
                                             </div>
-                                            <div className="text-gray-500 text-sm flex flex-wrap gap-x-6 gap-y-2 mt-4">
-                                                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    {lesson.estimated_time ? `${lesson.estimated_time} daqiiqo` : 'Waqti ma jiro'}
+
+                                            <div className="flex flex-wrap items-center gap-y-2 gap-x-5 text-sm text-gray-500">
+                                                <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg">
+                                                    <Clock className="w-4 h-4 text-blue-400" />
+                                                    <span className="font-medium text-gray-600">
+                                                        {lesson.estimated_time ? `${lesson.estimated_time} daqiiqo` : 'Waqti ma jiro'}
+                                                    </span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                                    </svg>
-                                                    {lesson.content_blocks.length} qeybood
+                                                <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg">
+                                                    <Layers className="w-4 h-4 text-purple-400" />
+                                                    <span className="font-medium text-gray-600">{lesson.content_blocks.length} qeybood</span>
                                                 </div>
                                                 {activeCourseId === 'all' && (
-                                                    <div className="flex items-center gap-1.5 whitespace-nowrap min-w-0">
-                                                        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.247 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                        </svg>
-                                                        <span className="truncate">{courses.find(c => c.id === lesson.course)?.title || 'Koorso la\'aan'}</span>
+                                                    <div className="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1 rounded-lg min-w-0 max-w-[200px]">
+                                                        <BookOpen className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                                        <span className="truncate font-medium text-gray-600">{courses.find(c => c.id === lesson.course)?.title || 'Koorso la\'aan'}</span>
                                                     </div>
                                                 )}
-                                                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                                    <div className={`w-2 h-2 rounded-full ${lesson.is_published ? 'bg-green-500' : 'bg-amber-500'}`} />
-                                                    <span className={lesson.is_published ? 'text-green-600 font-medium' : 'text-amber-600 font-medium'}>
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${lesson.is_published ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${lesson.is_published ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+                                                    <span className="font-bold text-xs uppercase tracking-wider">
                                                         {lesson.is_published ? 'Daabacan' : 'Qabyo'}
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex sm:flex-col lg:flex-row gap-2 sm:w-auto w-full">
+
+                                        <div className="flex items-center gap-3">
                                             <button
-                                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-bold flex items-center justify-center gap-2"
-                                                onClick={() => {
-                                                    setSelectedLesson(lesson);
-                                                    setShowContentBlocks(true);
-                                                }}
+                                                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all text-sm font-bold shadow-md shadow-blue-100 flex items-center gap-2"
+                                                onClick={() => router.push(`/casharada/${lesson.id}/qeybaha`)}
                                             >
-                                                <span>Qeybaha</span>
+                                                <Eye className="w-4 h-4" />
+                                                <span>Eeg Qeybaha</span>
                                             </button>
-                                            <button
-                                                className="flex-shrink-0 p-2.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
-                                                title="Wax ka beddel"
-                                                onClick={() => {
-                                                    setEditLesson(lesson);
-                                                    setEditTitle(lesson.title);
-                                                    setEditCourse(lesson.course);
-                                                    setEditLessonNumber(lesson.lesson_number);
-                                                    setEditEstimatedTime(lesson.estimated_time);
-                                                    setEditIsPublished(lesson.is_published);
-                                                    setShowEdit(true);
-                                                }}
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                className="flex-shrink-0 p-2.5 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
-                                                title="Tir"
-                                                onClick={() => {
-                                                    setDeletingLesson(lesson);
-                                                    setShowDelete(true);
-                                                }}
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
+
+                                            <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-100">
+                                                <button
+                                                    className="p-2 rounded-lg text-amber-600 hover:bg-white hover:shadow-sm transition-all"
+                                                    title="Wax ka beddel"
+                                                    onClick={() => {
+                                                        setEditLesson(lesson);
+                                                        setEditTitle(lesson.title);
+                                                        setEditCourse(lesson.course);
+                                                        setEditLessonNumber(lesson.lesson_number);
+                                                        setEditEstimatedTime(lesson.estimated_time);
+                                                        setEditIsPublished(lesson.is_published);
+                                                        setShowEdit(true);
+                                                    }}
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    className="p-2 rounded-lg text-red-600 hover:bg-white hover:shadow-sm transition-all"
+                                                    title="Tir"
+                                                    onClick={() => {
+                                                        setDeletingLesson(lesson);
+                                                        setShowDelete(true);
+                                                    }}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -366,84 +315,6 @@ export default function CasharadaPage() {
                         )}
                     </div>
                 )}
-
-                {/* Create Modal */}
-                <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Cashar cusub samee">
-                    <form onSubmit={handleCreate} className="space-y-4">
-                        {createError && (
-                            <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-                                {createError}
-                            </div>
-                        )}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Cinwaanka</label>
-                            <input
-                                type="text"
-                                className="w-full border rounded-lg px-4 py-2"
-                                value={newTitle}
-                                onChange={e => setNewTitle(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Koorso</label>
-                            <select
-                                className="w-full border rounded-lg px-4 py-2"
-                                value={newCourse || ""}
-                                onChange={e => setNewCourse(e.target.value ? parseInt(e.target.value) : null)}
-                            >
-                                <option value="">Dooro koorso...</option>
-                                {courses.map(course => (
-                                    <option key={course.id} value={course.id}>{course.title}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Lambarka cashar</label>
-                            <input
-                                type="number"
-                                className="w-full border rounded-lg px-4 py-2"
-                                value={newLessonNumber || ""}
-                                onChange={e => setNewLessonNumber(e.target.value ? parseInt(e.target.value) : null)}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Waqtiga qiyaasta ah (Ikhtiyaari)</label>
-                            <input
-                                type="number"
-                                className="w-full border rounded-lg px-4 py-2"
-                                value={newEstimatedTime || ""}
-                                onChange={e => setNewEstimatedTime(e.target.value ? parseInt(e.target.value) : null)}
-                            />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="newIsPublished"
-                                checked={newIsPublished}
-                                onChange={e => setNewIsPublished(e.target.checked)}
-                                className="rounded"
-                            />
-                            <label htmlFor="newIsPublished" className="text-sm text-gray-700">Daabac</label>
-                        </div>
-                        <div className="flex gap-2 justify-end pt-4">
-                            <button
-                                type="button"
-                                className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                onClick={() => setShowCreate(false)}
-                            >
-                                Ka noqo
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                                disabled={creating}
-                            >
-                                {creating ? "Sameynaayo..." : "Samee"}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
 
                 {/* Edit Modal */}
                 <Modal isOpen={showEdit} onClose={() => setShowEdit(false)} title="Cashar wax ka beddel">
@@ -553,14 +424,19 @@ export default function CasharadaPage() {
                         </div>
                     </div>
                 </Modal>
-
-                {/* Content Blocks Modal */}
-                <Modal isOpen={showContentBlocks} onClose={() => setShowContentBlocks(false)} title={`Qeybaha: ${selectedLesson?.title}`}>
-                    {selectedLesson && (
-                        <LessonContentBlocks lessonId={selectedLesson.id} onUpdate={fetchData} />
-                    )}
-                </Modal>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
+    );
+}
+
+export default function CasharadaPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout>
+                <div className="text-center text-gray-500 py-12">Soo loading...</div>
+            </DashboardLayout>
+        }>
+            <CasharadaContent />
+        </Suspense>
     );
 }

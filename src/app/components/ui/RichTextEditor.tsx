@@ -88,15 +88,15 @@ const MenuBar = ({ editor }: { editor: any }) => {
     ];
 
     return (
-        <div className="flex flex-wrap gap-1 p-2 border-b border-gray-200 bg-gray-50">
+        <div className="flex flex-wrap gap-1 p-1 border-b border-gray-200 bg-gray-50">
             {buttons.map((btn, i) => (
                 <button
                     key={i}
                     type="button"
                     onClick={btn.action}
                     className={`p-1.5 rounded transition-colors ${btn.isActive
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                         }`}
                     title={btn.title}
                 >
@@ -118,7 +118,7 @@ export const RichTextEditor = ({ content, onChange, placeholder }: RichTextEdito
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose max-w-none focus:outline-none min-h-[150px] p-4 text-gray-900',
+                class: 'prose prose-sm sm:prose max-w-none focus:outline-none min-h-[100px] p-3 text-gray-900',
             },
         },
     });

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api, ApiError } from "../api";
 import DashboardLayout from "../components/DashboardLayout";
 import { Modal } from "../components/ui/Modal";
@@ -20,7 +21,11 @@ interface Course {
     sequence?: number;
 }
 
-export default function KoorsooyinkaPage() {
+function KoorsooyinkaContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const categoryFilter = searchParams.get('category');
+
     const [courses, setCourses] = useState<Course[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState("");
@@ -152,9 +157,11 @@ export default function KoorsooyinkaPage() {
         }
     };
 
-    const filteredCourses = courses.filter(course =>
-        course.title.toLowerCase().includes(search.toLowerCase())
-    ).sort((a, b) => {
+    const filteredCourses = courses.filter(course => {
+        const matchesSearch = course.title.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = categoryFilter ? String(course.category) === categoryFilter : true;
+        return matchesSearch && matchesCategory;
+    }).sort((a, b) => {
         const seqA = (a.sequence && a.sequence > 0) ? a.sequence : -1;
         const seqB = (b.sequence && b.sequence > 0) ? b.sequence : -1;
         return seqB - seqA;
@@ -165,11 +172,25 @@ export default function KoorsooyinkaPage() {
             <div className="animate-fade-in space-y-6">
                 <div className="mb-8">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 text-blue-800 bg-gradient-to-r from-blue-800 to-blue-600 bg-clip-text text-transparent">
-                        Koorsooyinka
+                        Koorsooyinka {categoryFilter && categories.find(c => c.id === categoryFilter) ? ` - ${categories.find(c => c.id === categoryFilter)?.title}` : ''}
                     </h1>
                     <p className="text-gray-600 text-base sm:text-lg">
-                        Halkan waxaad ka maamuli kartaa koorsooyinka. Dooro ama raadso koorso si aad u bilowdo.
+                        {categoryFilter
+                            ? `Halkan waxaad ku arkaysaa koorsooyinka ku jira qaybta ${categories.find(c => c.id === categoryFilter)?.title}.`
+                            : "Halkan waxaad ka maamuli kartaa koorsooyinka. Dooro ama raadso koorso si aad u bilowdo."
+                        }
                     </p>
+                    {categoryFilter && (
+                        <button
+                            onClick={() => router.push('/koorsooyinka')}
+                            className="mt-4 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Ka saar shaandhada qaybta
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -221,19 +242,29 @@ export default function KoorsooyinkaPage() {
                 ) : (
                     <div className="space-y-3">
                         {filteredCourses.map(course => (
-                            <div key={course.id} className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                            <div
+                                key={course.id}
+                                className="p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer hover:border-blue-200"
+                                onClick={() => router.push(`/casharada?course=${course.id}`)}
+                            >
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
-                                        <div className="font-semibold text-lg text-blue-700">{course.title}</div>
-                                        <div className="text-gray-500 text-sm mt-1">{course.description}</div>
+                                        <div className="font-semibold text-lg text-blue-700 group-hover:text-blue-800">{course.title}</div>
+                                        <div className="text-gray-500 text-sm mt-1 line-clamp-1">{course.description}</div>
                                         <div className="flex gap-3 mt-2 text-xs text-gray-500">
-                                            <span>Qayb: {categories.find(c => c.id === course.category)?.title || 'Ma jiro'}</span>
-                                            <span>Xaalada: {course.is_published ? 'Daabacan' : 'Daabac ma\'ahan'}</span>
+                                            <span className="bg-gray-50 px-2 py-0.5 rounded">Qayb: {categories.find(c => c.id === course.category)?.title || 'Ma jiro'}</span>
+                                            <span className={`px-2 py-0.5 rounded ${course.is_published ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                                                {course.is_published ? 'Daabacan' : 'Qabyo'}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {course.thumbnail && <img src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />}
-                                        <div className="flex gap-2">
+                                    <div className="flex items-center gap-3">
+                                        {course.thumbnail && (
+                                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
+                                                <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                                            </div>
+                                        )}
+                                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                                             <button
                                                 className="px-3 py-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors text-sm font-medium"
                                                 onClick={() => {
@@ -479,5 +510,17 @@ export default function KoorsooyinkaPage() {
                 </Modal>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function KoorsooyinkaPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout>
+                <div className="text-center text-gray-500 py-12">Soo loading...</div>
+            </DashboardLayout>
+        }>
+            <KoorsooyinkaContent />
+        </Suspense>
     );
 }

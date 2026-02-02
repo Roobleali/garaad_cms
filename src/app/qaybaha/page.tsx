@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { api, ApiError, ApiResponse } from "../api";
 import DashboardLayout from "../components/DashboardLayout";
 import { Modal } from "../components/ui/Modal";
@@ -14,6 +15,7 @@ interface Category {
 }
 
 export default function QaybahaPage() {
+    const router = useRouter();
     const [categories, setCategories] = useState<Category[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
@@ -216,29 +218,51 @@ export default function QaybahaPage() {
                         {filteredCategories.map(cat => (
                             <div
                                 key={cat.id}
-                                className="group bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 border border-gray-100"
+                                onClick={() => router.push(`/koorsooyinka?category=${cat.id}`)}
+                                className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 cursor-pointer relative overflow-hidden"
                             >
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-lg text-gray-800 mb-2">{cat.title}</h3>
-                                        <p className="text-gray-600 text-sm line-clamp-2">{cat.description}</p>
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                <div className="flex flex-col gap-5 relative z-10">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-blue-700 transition-colors truncate">
+                                                {cat.title}
+                                            </h3>
+                                            <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">
+                                                {cat.description}
+                                            </p>
+                                        </div>
+                                        <div className="flex-shrink-0 ml-4">
+                                            {cat.image ? (
+                                                <div className="w-16 h-16 rounded-xl overflow-hidden shadow-sm border-2 border-white">
+                                                    <img
+                                                        src={cat.image}
+                                                        alt={cat.title}
+                                                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-16 rounded-xl bg-blue-50 flex items-center justify-center text-2xl shadow-inner border border-blue-100">
+                                                    📂
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                        {cat.image ? (
-                                            <img
-                                                src={cat.image}
-                                                alt={cat.title}
-                                                className="w-12 h-12 rounded-lg object-cover shadow-sm"
-                                            />
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                                                📷
-                                            </div>
-                                        )}
-                                        <div className="flex gap-2">
+
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                        <div className="flex items-center gap-1.5 text-blue-600 font-semibold text-sm">
+                                            <span>Eeg koorsooyinka</span>
+                                            <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </div>
+
+                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <button
-                                                className="px-3 py-2 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors duration-200 text-sm font-medium"
-                                                onClick={() => {
+                                                className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setEditCategory(cat);
                                                     setEditTitle(cat.title);
                                                     setEditDescription(cat.description);
@@ -246,17 +270,24 @@ export default function QaybahaPage() {
                                                     setEditSequence(cat.sequence || 0);
                                                     setShowEdit(true);
                                                 }}
+                                                title="Wax ka beddel"
                                             >
-                                                Wax ka beddel
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
                                             </button>
                                             <button
-                                                className="px-3 py-2 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors duration-200 text-sm font-medium"
-                                                onClick={() => {
+                                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setDeletingCategory(cat);
                                                     setShowDelete(true);
                                                 }}
+                                                title="Tir"
                                             >
-                                                Tir
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </div>

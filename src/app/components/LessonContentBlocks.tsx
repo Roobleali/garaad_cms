@@ -261,8 +261,8 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const handleAddBlock = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleAddBlock = async (e?: React.FormEvent, closeOnSuccess: boolean = true) => {
+        if (e) e.preventDefault();
         setError('');
         let createdProblemId: number | null = null;
 
@@ -408,10 +408,27 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         // Update order for all blocks
                         updatedBlocks.forEach((b, index) => { b.order = index; });
                         setBlocks(updatedBlocks);
-                        setEditingContent(DEFAULT_CONTENT);
-                        setShowAddBlock(false);
+                        if (closeOnSuccess) {
+                            setShowAddBlock(false);
+                            setEditingContent(DEFAULT_CONTENT);
+                        } else {
+                            // Reset for new block but keep some helpful defaults if needed
+                            setEditingContent({
+                                ...DEFAULT_CONTENT,
+                                type: editingContent.type, // Keep same type for faster entry
+                                order: updatedBlocks.length // Default to end of list
+                            });
+                        }
                         setTextFieldCount(1);
                         if (onUpdate) onUpdate();
+
+                        // Scroll top for rapid entry
+                        if (!closeOnSuccess) {
+                            setTimeout(() => {
+                                const scrollContainer = document.querySelector('.overflow-y-auto');
+                                if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                            }, 100);
+                        }
                     }
                 } catch (error) {
                     // If content block creation fails, clean up the created problem
@@ -427,6 +444,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             } else if (editingContent.type === 'list') {
                 // Ensure list_items is an array and not empty
                 const listItems = Array.isArray(editingContent.list_items) ? editingContent.list_items : [];
+                if (listItems.length === 0 && !editingContent.title) {
+                    setError('Fadlan ku dar waxyaabo liiska ah ama cinwaan');
+                    return;
+                }
 
                 const blockData = {
                     block_type: 'text',
@@ -451,10 +472,27 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         updatedBlocks.splice(specifiedOrder, 0, response.data);
                         updatedBlocks.forEach((b, index) => { b.order = index; });
                         setBlocks(updatedBlocks);
-                        setEditingContent(DEFAULT_CONTENT);
-                        setShowAddBlock(false);
+                        if (closeOnSuccess) {
+                            setShowAddBlock(false);
+                            setEditingContent(DEFAULT_CONTENT);
+                        } else {
+                            // Reset for new block but keep some helpful defaults if needed
+                            setEditingContent({
+                                ...DEFAULT_CONTENT,
+                                type: editingContent.type, // Keep same type for faster entry
+                                order: updatedBlocks.length // Default to end of list
+                            });
+                        }
                         setTextFieldCount(1);
                         if (onUpdate) onUpdate();
+
+                        // Scroll top for rapid entry
+                        if (!closeOnSuccess) {
+                            setTimeout(() => {
+                                const scrollContainer = document.querySelector('.overflow-y-auto');
+                                if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                            }, 100);
+                        }
                     }
                 } catch (error) {
                     console.error('Error creating list block:', error);
@@ -465,6 +503,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 }
             } else if (editingContent.type === 'quiz') {
                 // Explicitly handle quiz type
+                if (!editingContent.url && !editingContent.uploaded_video_id && !editingContent.title) {
+                    setError('Fadlan geli URL-ka muuqaalka, soo geli muuqaal, ama geli cinwaan');
+                    return;
+                }
                 const blockData = {
                     block_type: 'quiz',
                     content: {
@@ -487,13 +529,38 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     updatedBlocks.splice(specifiedOrder, 0, response.data);
                     updatedBlocks.forEach((b, index) => { b.order = index; });
                     setBlocks(updatedBlocks);
-                    setEditingContent(DEFAULT_CONTENT);
-                    setShowAddBlock(false);
+                    if (closeOnSuccess) {
+                        setShowAddBlock(false);
+                        setEditingContent(DEFAULT_CONTENT);
+                    } else {
+                        setEditingContent({
+                            ...DEFAULT_CONTENT,
+                            type: editingContent.type,
+                            order: updatedBlocks.length
+                        });
+                    }
                     setTextFieldCount(1);
                     if (onUpdate) onUpdate();
+
+                    // Scroll top for rapid entry
+                    if (!closeOnSuccess) {
+                        setTimeout(() => {
+                            const scrollContainer = document.querySelector('.overflow-y-auto');
+                            if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                        }, 100);
+                    }
                 }
             } else if (editingContent.type === 'table' || editingContent.type === 'table-grid') {
                 // Handle table and table-grid types
+                if (editingContent.type === 'table' && (!editingContent.features || editingContent.features.length === 0)) {
+                    setError('Fadlan ku dar waxyaabo jadwalka ah');
+                    return;
+                }
+                if (editingContent.type === 'table-grid' && (!editingContent.table?.rows || editingContent.table.rows.length === 0)) {
+                    setError('Fadlan ku dar safaf jadwalka ah');
+                    return;
+                }
+
                 const blockData = {
                     block_type: 'text',
                     content: {
@@ -522,13 +589,33 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     // Update order for all blocks
                     updatedBlocks.forEach((b, index) => { b.order = index; });
                     setBlocks(updatedBlocks);
-                    setEditingContent(DEFAULT_CONTENT);
-                    setShowAddBlock(false);
+                    if (closeOnSuccess) {
+                        setShowAddBlock(false);
+                        setEditingContent(DEFAULT_CONTENT);
+                    } else {
+                        setEditingContent({
+                            ...DEFAULT_CONTENT,
+                            type: editingContent.type,
+                            order: updatedBlocks.length
+                        });
+                    }
                     setTextFieldCount(1);
                     if (onUpdate) onUpdate();
+
+                    // Scroll top for rapid entry
+                    if (!closeOnSuccess) {
+                        setTimeout(() => {
+                            const scrollContainer = document.querySelector('.overflow-y-auto');
+                            if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                        }, 100);
+                    }
                 }
             } else if (editingContent.type === 'video') {
                 // Handle video type
+                if (!editingContent.url && !editingContent.uploaded_video_id) {
+                    setError('Fadlan geli URL-ka muuqaalka ama soo geli muuqaal');
+                    return;
+                }
                 const blockData = {
                     block_type: 'video',
                     content: {
@@ -553,20 +640,41 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     // Update order for all blocks
                     updatedBlocks.forEach((b, index) => { b.order = index; });
                     setBlocks(updatedBlocks);
-                    setEditingContent(DEFAULT_CONTENT);
-                    setShowAddBlock(false);
+                    if (closeOnSuccess) {
+                        setShowAddBlock(false);
+                        setEditingContent(DEFAULT_CONTENT);
+                    } else {
+                        setEditingContent({
+                            ...DEFAULT_CONTENT,
+                            type: editingContent.type,
+                            order: updatedBlocks.length
+                        });
+                    }
                     setTextFieldCount(1);
                     if (onUpdate) onUpdate();
+
+                    // Scroll top for rapid entry
+                    if (!closeOnSuccess) {
+                        setTimeout(() => {
+                            const scrollContainer = document.querySelector('.overflow-y-auto');
+                            if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                        }, 100);
+                    }
                 }
             } else {
                 // Handle normal text type
                 const mainText = editingContent.text || '';
-                const text1 = editingContent.text1 || '';  // Remove mainText fallback
+                const text1 = editingContent.text1 || '';
                 const text2 = editingContent.text2 || '';
                 const text3 = editingContent.text3 || '';
                 const text4 = editingContent.text4 || '';
                 const text5 = editingContent.text5 || '';
                 const title = editingContent.title || '';
+
+                if (!mainText && !text1 && !text2 && !text3 && !text4 && !text5 && !title) {
+                    setError('Fadlan geli qoraal ama cinwaan');
+                    return;
+                }
 
                 const blockData = {
                     block_type: 'text',
@@ -616,10 +724,26 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     // Update order for all blocks
                     updatedBlocks.forEach((b, index) => { b.order = index; });
                     setBlocks(updatedBlocks);
-                    setEditingContent(DEFAULT_CONTENT);
-                    setShowAddBlock(false);
+                    if (closeOnSuccess) {
+                        setShowAddBlock(false);
+                        setEditingContent(DEFAULT_CONTENT);
+                    } else {
+                        setEditingContent({
+                            ...DEFAULT_CONTENT,
+                            type: editingContent.type,
+                            order: updatedBlocks.length
+                        });
+                    }
                     setTextFieldCount(1);
                     if (onUpdate) onUpdate();
+
+                    // Scroll top for rapid entry
+                    if (!closeOnSuccess) {
+                        setTimeout(() => {
+                            const scrollContainer = document.querySelector('.overflow-y-auto');
+                            if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+                        }, 100);
+                    }
                 }
             }
         } catch (error) {
@@ -863,6 +987,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             } else if (editingContent.type === 'list') {
                 // Ensure list_items is an array and not empty
                 const listItems = Array.isArray(editingContent.list_items) ? editingContent.list_items : [];
+                if (listItems.length === 0 && !editingContent.title) {
+                    setEditError('Fadlan ku dar waxyaabo liiska ah ama cinwaan');
+                    return;
+                }
 
                 const blockData = {
                     block_type: 'text',
@@ -900,6 +1028,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 }
             } else if (editingContent.type === 'quiz') {
                 // Explicitly handle quiz update
+                if (!editingContent.url && !editingContent.uploaded_video_id && !editingContent.title) {
+                    setEditError('Fadlan geli URL-ka muuqaalka, soo geli muuqaal, ama geli cinwaan');
+                    return;
+                }
                 const blockData = {
                     ...editingBlock,
                     block_type: 'quiz',
@@ -930,6 +1062,14 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 }
             } else if (editingContent.type === 'table' || editingContent.type === 'table-grid') {
                 // Handle table type
+                if (editingContent.type === 'table' && (!editingContent.features || editingContent.features.length === 0)) {
+                    setEditError('Fadlan ku dar waxyaabo jadwalka ah');
+                    return;
+                }
+                if (editingContent.type === 'table-grid' && (!editingContent.table?.rows || editingContent.table.rows.length === 0)) {
+                    setEditError('Fadlan ku dar safaf jadwalka ah');
+                    return;
+                }
                 const blockData = {
                     ...editingBlock,
                     block_type: 'text',
@@ -963,6 +1103,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 }
             } else if (editingContent.type === 'video') {
                 // Handle video type
+                if (!editingContent.url && !editingContent.uploaded_video_id) {
+                    setEditError('Fadlan geli URL-ka muuqaalka ama soo geli muuqaal');
+                    return;
+                }
                 const blockData = {
                     ...editingBlock,
                     block_type: 'video',
@@ -993,12 +1137,17 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
             } else {
                 // Handle normal text type
                 const mainText = editingContent.text || '';
-                const text1 = editingContent.text1 || '';  // Remove mainText fallback
+                const text1 = editingContent.text1 || '';
                 const text2 = editingContent.text2 || '';
                 const text3 = editingContent.text3 || '';
                 const text4 = editingContent.text4 || '';
                 const text5 = editingContent.text5 || '';
                 const title = editingContent.title || '';
+
+                if (!mainText && !text1 && !text2 && !text3 && !text4 && !text5 && !title) {
+                    setEditError('Fadlan geli qoraal ama cinwaan');
+                    return;
+                }
 
                 const blockData = {
                     ...editingBlock,
@@ -1214,189 +1363,184 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
     const renderContentForm = (content: ContentBlockData, setContent: (content: ContentBlockData) => void) => {
         return (
-            <div className="space-y-6">
-                {/* Content Type Selection */}
+            <div className="space-y-3">
+                {/* Type and Order Group */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                    <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                         <h4 className="text-base font-semibold text-gray-900">
-                            Nooca Qeybta
+                            Nooca & Kala Horeeynta
                         </h4>
                     </div>
-                    <div className="px-6 py-5">
-                        <select
-                            value={content.type}
-                            onChange={(e) => {
-                                const newType = e.target.value as ContentBlockData['type'];
-                                if (newType === 'problem') {
-                                    setContent({
-                                        type: 'problem',
-                                        question_type: 'multiple_choice',
-                                        which: null,
-                                        question_text: '',
-                                        options: [],
-                                        correct_answer: [],
-                                        explanation: '',
-                                        content: {
-                                            type: 'multiple_choice',
-                                            hints: [],
-                                            steps: [],
-                                            feedback: {
-                                                correct: "Waa sax!",
-                                                incorrect: "Isku day mar kale",
+                    <div className="p-5 grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Nooca Qeybta</label>
+                            <select
+                                value={content.type}
+                                onChange={(e) => {
+                                    const newType = e.target.value as ContentBlockData['type'];
+                                    if (newType === 'problem') {
+                                        setContent({
+                                            type: 'problem',
+                                            question_type: 'multiple_choice',
+                                            which: null,
+                                            question_text: '',
+                                            options: [],
+                                            correct_answer: [],
+                                            explanation: '',
+                                            content: {
+                                                type: 'multiple_choice',
+                                                hints: [],
+                                                steps: [],
+                                                feedback: {
+                                                    correct: "Waa sax!",
+                                                    incorrect: "Isku day mar kale",
+                                                },
+                                                metadata: {
+                                                    tags: [],
+                                                    difficulty: "medium",
+                                                    estimated_time: 5,
+                                                },
                                             },
-                                            metadata: {
-                                                tags: [],
-                                                difficulty: "medium",
-                                                estimated_time: 5,
-                                            },
-                                        },
-                                        xp: 10,
-                                        order: content.order
-                                    });
-                                } else if (newType === 'list') {
-                                    setContent({ ...LIST_EXAMPLE });
-                                } else {
-                                    setContent({ ...DEFAULT_CONTENT, type: newType });
-                                }
-                            }}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                        >
-                            <option value="qoraal">Qoraal</option>
-                            <option value="table">Jawdwal</option>
-                            <option value="table-grid">Jadwal Grid</option>
-                            <option value="problem">Su'aal</option>
-                            <option value="video">Muuqaal</option>
-                            <option value="quiz">Quiz</option>
-                            <option value="list">Liiska</option>
-                        </select>
+                                            xp: 10,
+                                            order: content.order
+                                        });
+                                    } else if (newType === 'list') {
+                                        setContent({ ...LIST_EXAMPLE });
+                                    } else {
+                                        setContent({ ...DEFAULT_CONTENT, type: newType });
+                                    }
+                                }}
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                            >
+                                <option value="qoraal">Qoraal</option>
+                                <option value="table">Jawdwal</option>
+                                <option value="table-grid">Jadwal Grid</option>
+                                <option value="problem">Su'aal</option>
+                                <option value="video">Muuqaal</option>
+                                <option value="quiz">Quiz</option>
+                                <option value="list">Liiska</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="content-order" className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">Kala Horeeynta</label>
+                            <input
+                                type="number"
+                                id="content-order"
+                                value={content.order === 0 ? '0' : (content.order || '')}
+                                onChange={(e) => {
+                                    const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                    setContent({ ...content, order: value });
+                                }}
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                placeholder="0"
+                                min="0"
+                            />
+                        </div>
                     </div>
                 </div>
 
+                {/* Table Type Selector */}
+                {(content.type === 'table' || content.type === 'table-grid') && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
+                            <h4 className="text-base font-semibold text-gray-900">
+                                Nooca Jadwalka
+                            </h4>
+                        </div>
+                        <div className="px-6 py-2">
+                            <select
+                                id="tableType"
+                                value={tableType}
+                                onChange={(e) => {
+                                    handleTableTypeChange(e);
+                                    if (e.target.value) {
+                                        setContent({ ...content, type: e.target.value as any });
+                                    }
+                                }}
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                            >
+                                <option value="">Select table type</option>
+                                <option value="table">Table</option>
+                                <option value="table-grid">Table Grid</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+
                 {/* List content form */}
                 {content.type === 'list' && (
-                    <div className="space-y-4">
-                        <div className="mb-4">
-                            <label htmlFor="listTitle" className="block text-sm font-medium text-gray-700 mb-2">
-                                Cinwaanka
-                            </label>
-                            <input
-                                type="text"
-                                id="listTitle"
-                                value={content.title || ''}
-                                onChange={(e) => setContent({ ...content, title: e.target.value })}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                            />
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
+                            <h4 className="text-base font-semibold text-gray-900">
+                                Faahfaahinta Liiska
+                            </h4>
                         </div>
-                        <div className="mb-4">
-                            <label htmlFor="listItems" className="block text-sm font-medium text-gray-700 mb-2">
-                                Liiska
-                            </label>
-                            <div className="space-y-2">
-                                {(content.list_items || []).map((item, index) => (
-                                    <div key={index} className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={item}
-                                            onChange={(e) => {
-                                                const newItems = [...(content.list_items || [])];
-                                                newItems[index] = e.target.value;
-                                                setContent({ ...content, list_items: newItems });
-                                            }}
-                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const newItems = [...(content.list_items || [])];
-                                                newItems.splice(index, 1);
-                                                setContent({ ...content, list_items: newItems });
-                                            }}
-                                            className="px-3 py-2 text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                ))}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setContent({
-                                            ...content,
-                                            list_items: [...(content.list_items || []), '']
-                                        });
-                                    }}
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-                                >
-                                    + Ku dar liiska
-                                </button>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label htmlFor="listTitle" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Cinwaanka
+                                </label>
+                                <input
+                                    type="text"
+                                    id="listTitle"
+                                    value={content.title || ''}
+                                    onChange={(e) => setContent({ ...content, title: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                                    placeholder="Geli cinwaanka liiska..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Waxyaabaha Liiska (Items)
+                                </label>
+                                <div className="space-y-3">
+                                    {(content.list_items || []).map((item, index) => (
+                                        <div key={index} className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={item}
+                                                onChange={(e) => {
+                                                    const newItems = [...(content.list_items || [])];
+                                                    newItems[index] = e.target.value;
+                                                    setContent({ ...content, list_items: newItems });
+                                                }}
+                                                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                                                placeholder={`Shayga ${index + 1}...`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const newItems = [...(content.list_items || [])];
+                                                    newItems.splice(index, 1);
+                                                    setContent({ ...content, list_items: newItems });
+                                                }}
+                                                className="px-3 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setContent({
+                                                ...content,
+                                                list_items: [...(content.list_items || []), '']
+                                            });
+                                        }}
+                                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 border-dashed rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-all duration-200"
+                                    >
+                                        + Ku dar shay cusub
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Add Tusaale Jadwal button */}
-                {content.type === 'table' && (
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setContent(TABLE_EXAMPLE);
-                                setTableFeatures(TABLE_EXAMPLE.features || []);
-                            }}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Tusaale Jadwal
-                        </button>
-                    </div>
-                )}
-
-                {/* Order Field */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
-                        <h4 className="text-base font-semibold text-gray-900">
-                            Kala horeeynta
-                        </h4>
-                    </div>
-                    <div className="px-6 py-5">
-                        <input
-                            type="number"
-                            id="content-order"
-                            value={content.order === undefined ? '' : content.order}
-                            onChange={(e) => {
-                                const value = e.target.value === '' ? 0 : parseInt(e.target.value);
-                                setContent({ ...content, order: value });
-                            }}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                            placeholder="Geli lambarka kala horeeynta..."
-                            min="0"
-                        />
-                        <p className="mt-2 text-sm text-gray-500">
-                            Lambarka kala horeeynta ayaa go'aaminaya halka qeybtan laga muujinayo. 0 waa ugu horreeya.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Add table type selector */}
-                <div className="mb-4">
-                    <label htmlFor="tableType" className="block text-sm font-medium text-gray-700 mb-2">
-                        Nooca Jadwalka
-                    </label>
-                    <select
-                        id="tableType"
-                        value={tableType}
-                        onChange={handleTableTypeChange}
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                    >
-                        <option value="">Select table type</option>
-                        <option value="table">Table</option>
-                        <option value="table-grid">Table Grid</option>
-                    </select>
-                </div>
-
                 {/* Table content form */}
                 {tableType === 'table' && (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         <div className="mb-4">
                             <label htmlFor="tableText" className="block text-sm font-medium text-gray-700 mb-2">
                                 Qoraalka Guud
@@ -1408,7 +1552,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                             />
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <h4 className="text-base font-semibold text-gray-900">
                                     Astaamaha
@@ -1442,7 +1586,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         </button>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         <div>
                                             <label htmlFor={`feature-title-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                                                 Magac
@@ -1482,7 +1626,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 )}
 
                 {content.type === 'table-grid' && (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         <div className="flex justify-between items-center mb-4">
                             <h4 className="text-base font-semibold text-gray-900">
                                 Qoraalka Guud
@@ -1586,7 +1730,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         </div>
 
                         {/* Rows editing */}
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <h4 className="text-base font-semibold text-gray-900">
                                     Safafka Jadwalka
@@ -1662,7 +1806,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                 {content.type === 'qoraal' && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                        <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                             <div className="flex justify-between items-center">
                                 <h4 className="text-base font-semibold text-gray-900">
                                     Faahfaahinta Qoraalka
@@ -1682,7 +1826,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                 </button>
                             </div>
                         </div>
-                        <div className="p-6 space-y-6">
+                        <div className="p-5 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label
@@ -1696,7 +1840,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         type="text"
                                         value={content.title}
                                         onChange={(e) => setContent({ ...content, title: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="Geli cinwaanka..."
                                         required
                                     />
@@ -1709,7 +1853,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     >
                                         URL-ka Sawirka (Optional)
                                     </label>
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         {/* Main Image URL */}
                                         <div className="flex gap-2">
                                             <input
@@ -1717,7 +1861,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                 type="url"
                                                 value={content.url || ''}
                                                 onChange={(e) => setContent({ ...content, url: e.target.value })}
-                                                className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                 placeholder="https://example.com/image.jpg"
                                             />
                                             {content.url && (
@@ -1757,7 +1901,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                             (newContent as any)[urlKey] = e.target.value;
                                                             setContent(newContent);
                                                         }}
-                                                        className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         placeholder={`https://example.com/image${index}.jpg`}
                                                     />
                                                     <button
@@ -1908,10 +2052,10 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 )}
 
                 {content.type === 'problem' && (
-                    <div className="space-y-8">
+                    <div className="space-y-4">
                         {/* Question Type Selection */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                            <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                 <div className="flex justify-between items-center">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Nooca Su'aasha
@@ -1928,7 +2072,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     </button>
                                 </div>
                             </div>
-                            <div className="px-6 py-5">
+                            <div className="px-6 py-2">
                                 <select
                                     id="question-type"
                                     value={content.question_type || 'multiple_choice'}
@@ -1937,7 +2081,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         question_type: e.target.value as ContentBlockData['question_type'],
                                         diagram_config: e.target.value === 'diagram' ? DEFAULT_DIAGRAM_CONFIG : undefined
                                     })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
                                 >
                                     <option value="multiple_choice">Doorashooyin Badan (Multiple Choice)</option>
 
@@ -1948,12 +2092,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {/* Question Content */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                            <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                 <h4 className="text-base font-semibold text-gray-900">
                                     Faahfaahinta Su&apos;aasha
                                 </h4>
                             </div>
-                            <div className="p-6 space-y-6">
+                            <div className="p-5 space-y-4">
                                 <div>
                                     <label
                                         htmlFor="question-prefix"
@@ -1995,7 +2139,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             type="url"
                                             value={content.img || ''}
                                             onChange={(e) => setContent({ ...content, img: e.target.value })}
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                             placeholder="https://example.com/image.jpg"
                                         />
                                     </div>
@@ -2012,7 +2156,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             type="number"
                                             value={content.xp || 10}
                                             onChange={(e) => setContent({ ...content, xp: parseInt(e.target.value) })}
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                             min="1"
                                             required
                                         />
@@ -2020,7 +2164,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                 </div>
 
                                 {/* Problem Video Support */}
-                                <div className="space-y-4">
+                                <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-900">
                                         Muuqaalka Su&apos;aasha (Optional)
                                     </label>
@@ -2052,7 +2196,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                                     {/* Upload Section */}
                                     {(content.video_source_type || 'upload') === 'upload' && (
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
                                             <div className="relative">
                                                 <input
                                                     type="file"
@@ -2114,7 +2258,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                 type="url"
                                                 value={content.video_url || ''}
                                                 onChange={(e) => setContent({ ...content, video_url: e.target.value })}
-                                                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                 placeholder="https://example.com/video.mp4"
                                             />
                                         </div>
@@ -2126,14 +2270,14 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                         {/* Question Type Specific Inputs */}
                         {(['multiple_choice', 'single_choice'].includes(content.question_type || '')) && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Doorashooyinka
                                     </h4>
                                 </div>
-                                <div className="p-6 space-y-6">
+                                <div className="p-5 space-y-4">
                                     {/* Options */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         {content.options?.map((option, index) => (
                                             <div key={option.id} className="flex items-start gap-4">
                                                 <div className="flex-1">
@@ -2153,7 +2297,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                 newOptions[index] = { ...option, text: e.target.value };
                                                                 setContent({ ...content, options: newOptions });
                                                             }}
-                                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                             placeholder={`Doorashada ${index + 1}...`}
                                                         />
                                                         <button
@@ -2224,12 +2368,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'true_false' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Jawaabta Saxda ah
                                     </h4>
                                 </div>
-                                <div className="p-6">
+                                <div className="p-4">
                                     <div className="flex items-center gap-4">
                                         <label className="inline-flex items-center">
                                             <input
@@ -2274,12 +2418,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'fill_blank' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Jawaabta Saxda ah
                                     </h4>
                                 </div>
-                                <div className="p-6">
+                                <div className="p-4">
                                     <input
                                         type="text"
                                         value={content.correct_answer?.[0]?.text || ''}
@@ -2287,7 +2431,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             ...content,
                                             correct_answer: [{ id: 'answer', text: e.target.value }]
                                         })}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="Geli jawaabta saxda ah..."
                                     />
                                 </div>
@@ -2296,14 +2440,14 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'matching' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Isku Xirka
                                     </h4>
                                 </div>
-                                <div className="p-6 space-y-6">
+                                <div className="p-5 space-y-4">
                                     {/* Matching Pairs */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         {content.options?.map((option, index) => (
                                             <div key={option.id} className="flex items-start gap-4">
                                                 <div className="flex-1">
@@ -2326,7 +2470,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                             };
                                                             setContent({ ...content, options: newOptions });
                                                         }}
-                                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         placeholder={`Dhinaca bidix ${index + 1}...`}
                                                     />
                                                 </div>
@@ -2351,7 +2495,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                 };
                                                                 setContent({ ...content, options: newOptions });
                                                             }}
-                                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                             placeholder={`Dhinaca midig ${index + 1}...`}
                                                         />
                                                         <button
@@ -2397,12 +2541,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'open_ended' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Jawaabta La Filayo
                                     </h4>
                                 </div>
-                                <div className="p-6">
+                                <div className="p-4">
                                     <textarea
                                         value={content.correct_answer?.[0]?.text || ''}
                                         onChange={(e) => setContent({
@@ -2418,12 +2562,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'math_expression' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Jawaabta Saxda ah (LaTeX)
                                     </h4>
                                 </div>
-                                <div className="p-6">
+                                <div className="p-4">
                                     <input
                                         type="text"
                                         value={content.correct_answer?.[0]?.text || ''}
@@ -2431,7 +2575,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             ...content,
                                             correct_answer: [{ id: 'answer', text: e.target.value }]
                                         })}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="Geli jawaabta saxda ah ee LaTeX (tusaale: \frac{1}{2})"
                                     />
                                 </div>
@@ -2440,12 +2584,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'code' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Jawaabta Saxda ah (Code)
                                     </h4>
                                 </div>
-                                <div className="p-6">
+                                <div className="p-4">
                                     <textarea
                                         value={content.correct_answer?.[0]?.text || ''}
                                         onChange={(e) => setContent({
@@ -2461,16 +2605,16 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {content.question_type === 'diagram' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                     <h4 className="text-base font-semibold text-gray-900">
                                         Doorashooyinka Diagram-ka
                                     </h4>
                                 </div>
-                                <div className="p-6 space-y-6">
+                                <div className="p-5 space-y-4">
                                     {/* Diagram Configuration */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         <h5 className="font-medium text-gray-900">Diagram Configuration</h5>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-sm font-medium mb-2 text-gray-900">
                                                     Diagram ID
@@ -2485,7 +2629,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                             diagram_id: parseInt(e.target.value)
                                                         } as DiagramConfig
                                                     })}
-                                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                 />
                                             </div>
                                             <div>
@@ -2502,13 +2646,13 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                             scale_weight: parseInt(e.target.value)
                                                         } as DiagramConfig
                                                     })}
-                                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                 />
                                             </div>
                                         </div>
 
                                         {/* Objects */}
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
                                             <h6 className="font-medium text-gray-900">Objects</h6>
                                             {content.diagram_config?.objects?.map((obj, index) => (
                                                 <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg">
@@ -2530,7 +2674,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                     } as DiagramConfig
                                                                 });
                                                             }}
-                                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         />
                                                     </div>
                                                     <div>
@@ -2551,7 +2695,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                     } as DiagramConfig
                                                                 });
                                                             }}
-                                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         />
                                                     </div>
                                                     <div>
@@ -2572,7 +2716,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                     } as DiagramConfig
                                                                 });
                                                             }}
-                                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         />
                                                     </div>
                                                     <div>
@@ -2596,7 +2740,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                     } as DiagramConfig
                                                                 });
                                                             }}
-                                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         />
                                                     </div>
                                                     <div>
@@ -2616,7 +2760,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                     } as DiagramConfig
                                                                 });
                                                             }}
-                                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                         >
                                                             <option value="left">Left</option>
                                                             <option value="center">Center</option>
@@ -2659,7 +2803,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     </div>
 
                                     {/* Layout Configuration */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         <h6 className="font-medium text-gray-900">Layout Configuration</h6>
                                         {content.diagram_config?.objects?.map((obj, index) => (
                                             <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg">
@@ -2687,7 +2831,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                 } as DiagramConfig
                                                             });
                                                         }}
-                                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                     />
                                                 </div>
                                                 <div>
@@ -2714,7 +2858,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                 } as DiagramConfig
                                                             });
                                                         }}
-                                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                     />
                                                 </div>
                                                 <div>
@@ -2740,7 +2884,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                 } as DiagramConfig
                                                             });
                                                         }}
-                                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                     >
                                                         <option value="top">Top</option>
                                                         <option value="bottom">Bottom</option>
@@ -2772,7 +2916,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                                                 } as DiagramConfig
                                                             });
                                                         }}
-                                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                                     >
                                                         <option value="left">Left</option>
                                                         <option value="center">Center</option>
@@ -2851,12 +2995,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                         {/* Explanation Field */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                            <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                                 <h4 className="text-base font-semibold text-gray-900">
                                     Sharaxaad
                                 </h4>
                             </div>
-                            <div className="p-6">
+                            <div className="p-4">
                                 <RichTextEditor
                                     content={content.explanation || ''}
                                     onChange={(newVal) => setContent({ ...content, explanation: newVal })}
@@ -2869,20 +3013,34 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                 {content.type === 'video' && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                        <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                             <h4 className="text-base font-semibold text-gray-900">Faahfaahinta Muuqaalka</h4>
                         </div>
-                        <div className="p-6 space-y-6">
-                            <div>
-                                <label htmlFor="video-title" className="block text-sm font-medium mb-2 text-gray-900">Ciwaanka Muuqaalka</label>
-                                <input
-                                    id="video-title"
-                                    type="text"
-                                    value={content.title || ''}
-                                    onChange={(e) => setContent({ ...content, title: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    placeholder="Geli ciwaanka muuqaalka..."
-                                />
+                        <div className="p-5 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="video-title" className="block text-sm font-medium mb-1 text-gray-900">Ciwaanka</label>
+                                    <input
+                                        id="video-title"
+                                        type="text"
+                                        value={content.title || ''}
+                                        onChange={(e) => setContent({ ...content, title: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        placeholder="Ciwaanka..."
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="video-duration" className="block text-sm font-medium mb-1 text-gray-900">Muddada (S)</label>
+                                    <input
+                                        id="video-duration"
+                                        type="number"
+                                        value={content.duration || ''}
+                                        onChange={(e) => setContent({ ...content, duration: parseInt(e.target.value) })}
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        placeholder="Seconds..."
+                                        min="0"
+                                    />
+                                </div>
                             </div>
 
                             {/* Video Source Toggle */}
@@ -2913,7 +3071,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                             {/* Upload Section */}
                             {(content.video_source_type || 'upload') === 'upload' && (
-                                <div className="space-y-4">
+                                <div className="space-y-2">
                                     <div className="relative">
                                         <input
                                             type="file"
@@ -2989,7 +3147,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                         type="url"
                                         value={content.url || ''}
                                         onChange={(e) => setContent({ ...content, url: e.target.value })}
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                         placeholder="https://example.com/video.mp4"
                                     />
                                 </div>
@@ -3003,28 +3161,16 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                     placeholder="Sharaxaada muuqaalka..."
                                 />
                             </div>
-                            <div>
-                                <label htmlFor="video-duration" className="block text-sm font-medium mb-2 text-gray-900">Muddada (ilbiriqsi)</label>
-                                <input
-                                    id="video-duration"
-                                    type="number"
-                                    value={content.duration || ''}
-                                    onChange={(e) => setContent({ ...content, duration: parseInt(e.target.value) })}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                    placeholder="Muddada muuqaalka (ilbiriqsi)..."
-                                    min="0"
-                                />
-                            </div>
                         </div>
                     </div>
                 )}
 
                 {content.type === 'quiz' && (
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                        <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                             <h4 className="text-base font-semibold text-gray-900">Faahfaahinta Quiz-ka</h4>
                         </div>
-                        <div className="p-6 space-y-6">
+                        <div className="p-5 space-y-4">
                             <div>
                                 <label htmlFor="quiz-question" className="block text-sm font-medium mb-2 text-gray-900">Su&apos;aasha Quiz-ka</label>
                                 <RichTextEditor
@@ -3035,7 +3181,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                             </div>
 
                             {/* Video Source Toggle */}
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-900">
                                     Muuqaalka Su&apos;aasha (Optional)
                                 </label>
@@ -3066,7 +3212,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
 
                                 {/* Upload Section */}
                                 {(content.video_source_type || 'upload') === 'upload' && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         <div className="relative">
                                             <input
                                                 type="file"
@@ -3119,7 +3265,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                                             type="url"
                                             value={content.url || ''}
                                             onChange={(e) => setContent({ ...content, url: e.target.value })}
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                             placeholder="https://example.com/video.mp4"
                                         />
                                     </div>
@@ -3127,7 +3273,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                             </div>
 
                             {/* Options */}
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-900">Doorashooyinka</label>
                                 {(content.options || []).map((option, idx) => (
                                     <div key={idx} className="flex gap-2">
@@ -3396,13 +3542,12 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                     closeModal(false);
                     setEditingBlock(null);
                     setEditingContent(DEFAULT_CONTENT);
-                    setTextFieldCount(1);
+                    setEditError('');
+                    setError('');
                 }}
-                onSubmit={showAddBlock ? handleAddBlock : handleUpdateBlock}
-                title={showAddBlock
-                    ? (editingContent.type === 'qoraal' ? 'Qoraal cusub' : editingContent.type === 'video' ? 'Muuqaal cusub' : editingContent.type === 'quiz' ? 'Quiz cusub' : 'Su\'aal cusub')
-                    : (editingContent.type === 'qoraal' ? 'Wax ka beddel Qoraalka' : editingContent.type === 'video' ? 'Wax ka beddel Muuqaalka' : editingContent.type === 'quiz' ? 'Wax ka beddel Quiz-ka' : 'Wax ka beddel Su\'aalka')
-                }
+                onSubmit={showAddBlock ? (e) => handleAddBlock(e, true) : handleUpdateBlock}
+                onSaveAndAddNew={showAddBlock ? (e) => handleAddBlock(e, false) : undefined}
+                title={showAddBlock ? 'Qeyb Cusub' : 'Qeybta Beddel'}
                 content={editingContent}
                 setContent={setEditingContent}
                 isAdding={adding}
@@ -3420,7 +3565,7 @@ export default function LessonContentBlocks({ lessonId, onUpdate }: LessonConten
                 title="Tir Su'aal"
                 description="Ma hubtaa inaad tirto su'aashan? Tani waa mid aan la soo celin karin."
             >
-                <div className="px-6 py-4">
+                <div className="px-4 py-3">
                     {deleteError && (
                         <p className="text-sm text-red-600 mb-4">{deleteError}</p>
                     )}
